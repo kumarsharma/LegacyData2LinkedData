@@ -8,7 +8,7 @@ package EntryPackage;
  *
  * @author home
  */
-public class Marc2LinkedData {
+public class LegacyData2LinkedData {
 
     /**
      * @param args the command line arguments

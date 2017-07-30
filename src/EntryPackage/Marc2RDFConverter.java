@@ -32,6 +32,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.spark.api.java.function.Function;
 
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.spark.sql.api.java.*;
 /**
  *
  * @author user
@@ -57,7 +58,7 @@ public Marc2RDFConverter(){};
             
             JavaSparkContext spark = new JavaSparkContext(ss.sparkContext());
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-            mrc.convertCSVtoRDF(args, spark);
+            mrc.convertCSVtoRDF(args, spark, "customer_rdf_store");
             spark.stop();
         }
         else if(state == 2)
@@ -75,7 +76,7 @@ public Marc2RDFConverter(){};
         }
     }
     
-    private void convertCSVtoRDF(String args[], JavaSparkContext spark)
+    private void convertCSVtoRDF(String args[], JavaSparkContext spark, String dbName)
     {
         JavaRDD<String> lines = spark.textFile(args[0]);
         String header = lines.first();//take out header
@@ -119,7 +120,7 @@ public Marc2RDFConverter(){};
     {
         Configuration configuration = new Configuration();
             configuration.set("textinputformat.record.delimiter", "LEADER");
-            configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/NetBeansProjects/SparkSample/marctxt.txt");
+            configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/NetBeansProjects/SparkSample/marctxt2.txt");
             
         JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
         JavaRDD<Text> textRDD = javaPairRDD.values();    
@@ -141,7 +142,7 @@ public Marc2RDFConverter(){};
                 Model biboModel = ModelFactory.createDefaultModel();
                 Model foafModel = ModelFactory.createDefaultModel();
                 biboModel.setNsPrefix("property", baseUri);
-                Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, true);
+                Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, false);
 
                 String syntax = "N-TRIPLES"; // also try "N-TRIPLE" and "TURTLE"
                 StringWriter out = new StringWriter();
@@ -153,6 +154,12 @@ public Marc2RDFConverter(){};
             return line;
         });
         
-        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/marcrecordsparsed");
+        
+        
+        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/marc21RDFRecords_Part2");
+        //rdd_customers.saveAsObjectFile("/usr/local/hadoop/input/marcrecordsparsed.nt");
+//        rdd_customers.saveAsObjectFile("/usr/local/hadoop/input/marc21RDFrecords.nt");
+//        rdd_customers.saveAsObjectFile("/usr/local/hadoop/input/marc21RDFRecords_Part1.nt");
+//        rdd_customers.saveAsObjectFile("/usr/local/hadoop/input/marc21RDFRecords_Part2.nt");
     }
 }

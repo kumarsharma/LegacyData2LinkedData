@@ -76,46 +76,55 @@ public class MarcStringReader {
     {
         record = factory.newRecord();
         String parts[] = marcString.split("\n");
-        Leader leader = factory.newLeader(parts[0].substring(7));
-        record.setLeader(leader);
         
-        int i = 0;
-        for(String field : parts)
+        if(parts.length>0)
         {
-            if(i>0)
+            if(parts[0].length()>20)
             {
-                String tag = field.substring(0, 3);
-                String data = field.substring(4, field.length());
-                
-                if(isControlField(tag))
-                {
-                    ControlField cField = factory.newControlField();
-                    cField.setTag(tag);
-                    cField.setData(data);
-                    record.addVariableField(cField);
-                }
-                else
-                {
-                    char ind1 = data.charAt(0);
-                    char ind2 = data.charAt(1);
-                    
-                    String realData = data.substring(2);
-                    String[] subfieldsData = realData.split("\\$");
-                    
-                    DataField df = factory.newDataField(tag, ind2, ind1);
-                    for(String sf : subfieldsData)
-                    {
-                        if(sf.length()>2)
-                        {
-                            char sfCode = sf.charAt(0);
-                            String sfData = sf.substring(1);
-                            df.addSubfield(factory.newSubfield(sfCode, sfData)); 
-                        }
-                    }                            
-                    record.addVariableField(df);
-                }
+                String ldrStr = parts[0].substring(7);
+                System.out.println("LEADER String: "+ldrStr);
+                Leader leader = factory.newLeader(parts[0].substring(7));
+                record.setLeader(leader);
             }
-            i++;
+
+            int i = 0;
+            for(String field : parts)
+            {
+                if(i>0)
+                {
+                    String tag = field.substring(0, 3);
+                    String data = field.substring(4, field.length());
+
+                    if(isControlField(tag))
+                    {
+                        ControlField cField = factory.newControlField();
+                        cField.setTag(tag);
+                        cField.setData(data);
+                        record.addVariableField(cField);
+                    }
+                    else
+                    {
+                        char ind1 = data.charAt(0);
+                        char ind2 = data.charAt(1);
+
+                        String realData = data.substring(2);
+                        String[] subfieldsData = realData.split("\\$");
+
+                        DataField df = factory.newDataField(tag, ind2, ind1);
+                        for(String sf : subfieldsData)
+                        {
+                            if(sf.length()>2)
+                            {
+                                char sfCode = sf.charAt(0);
+                                String sfData = sf.substring(1);
+                                df.addSubfield(factory.newSubfield(sfCode, sfData)); 
+                            }
+                        }                            
+                        record.addVariableField(df);
+                    }
+                }
+                i++;
+            }
         }
         
         return record;
