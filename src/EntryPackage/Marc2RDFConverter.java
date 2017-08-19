@@ -7,7 +7,9 @@ package EntryPackage;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.StringWriter;
+import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
 import org.apache.spark.sql.SparkSession;
 import org.marc4j.marc.Record;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -25,8 +27,6 @@ import org.apache.spark.sql.Row;
 import java.util.Arrays;
 import MLTools.RDFTriple;
 import Mappings.Marc2RDFMapper;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
 /**
  *
  * @author userqq
@@ -41,7 +41,7 @@ public Marc2RDFConverter(){};
 			      .builder()
 			      .appName("MarcRecordReader")
 			      .master("local")
-                              .config("spark.driver.cores", 2)
+                              .config("spark.driver.cores", 1)
 			      .getOrCreate();
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
