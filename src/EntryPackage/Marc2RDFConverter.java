@@ -46,7 +46,8 @@ public Marc2RDFConverter(){};
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-            mrc.convertMarctoRDF(spark, sparkSession);
+            mrc.ShowataFromParquetFile(spark, sparkSession);
+//            mrc.convertMarctoRDF(spark, sparkSession);
 //            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
             
         spark.stop();
@@ -218,5 +219,33 @@ public Marc2RDFConverter(){};
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
         dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
     }
+    
+    private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
+     {
+//        Dataset<Row> ds = ss.read().parquet("/usr/local/hadoop/input/csv2rdf_triples_set6.parquet");
+        Dataset<Row> ds = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+//        Dataset<Row> dataset2 = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
+        ds.createOrReplaceTempView("rdf_triples");
+        ds.createOrReplaceTempView("rdf_triples2");
+        ds.createOrReplaceTempView("rdf_triples3");
+//        ds.select("subject").show();
+//        Dataset<Row> dsResult = ds.filter("subject='http://klyuniv.ac.in/ontology/resource#_39'").filter("predicate='http://klyuniv.ac.in/ontology/property#Phone'");
+//        dsResult.show();
+//        Dataset<Row> namesDF = ss.sql("SELECT subject,predicate,object from rdf_triples").filter("subject='http://klyuniv.ac.in/ontology/resource#_39'").filter("predicate='http://klyuniv.ac.in/ontology/property#Phone'");
+//        Dataset<Row> namesDF = ss.sql("SELECT subject,predicate,object from rdf_triples group by subject");
+//        Dataset<Row> ds1 = ss.sql("SELECT object from rdf_triples").filter("predicate='http://klyuniv.ac.in/ontology/property#Type'").filter("object='\"VIP\"'");
+//        Dataset<Row> ds2 = ss.sql("SELECT s.object from rdf_triples s inner join rdf_triples p on (s.subject=p.subject) where s.predicate='http://klyuniv.ac.in/ontology/property#FirstName' AND p.object='\"FREQUENT\"'");
+//        Dataset<Row> ds2 = ss.sql("SELECT s.object as MBOX, s2.object as NAME from rdf_triples s inner join rdf_triples p on (s.subject=p.subject) inner join rdf_triples s2 on (s.subject=s2.subject) where s.predicate='http://klyuniv.ac.in/ontology/property#Email' AND s2.predicate='http://klyuniv.ac.in/ontology/property#FirstName' AND p.object='\"Ajay\"'");
+//        ds2.show();
+//        namesDF.show();
+//        dataset.printSchema();
+//        Dataset<Row> subDS = ss.sql("SELECT *FROM rdf_triples").filter("predicate='http://www.marcont.org/ontology/2.1#hasAddress'").filter("object='\"University of South Carolina,\"'");
+//        subDS.show();
+        
+        Dataset<Row> ds2 = ss.sql("SELECT *FROM rdf_triples s inner join rdf_triples p on (s.subject=p.subject) where s.predicate='http://www.marcont.org/ontology/2.1#hasAddress' AND s.object='\"University of South Carolina,\"'");
+        ds2.show();
+        ds2.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
+//        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
+     }
 }
 
