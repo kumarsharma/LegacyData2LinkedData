@@ -46,8 +46,8 @@ public Marc2RDFConverter(){};
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-//            mrc.convertMarctoRDF(spark, sparkSession);
-            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
+            mrc.convertMarctoRDF(spark, sparkSession);
+//            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
             
         spark.stop();
     }
@@ -56,7 +56,7 @@ public Marc2RDFConverter(){};
     {
         Configuration configuration = new Configuration();
         configuration.set("textinputformat.record.delimiter", "LEADER");
-        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/NetBeansProjects/SparkSample/marctxt.txt");
+        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/NetBeansProjects/SparkSample/marctxt2.txt");
             
         JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
         JavaRDD<Text> textRDD = javaPairRDD.values();    
@@ -128,14 +128,14 @@ public Marc2RDFConverter(){};
         });
         
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
-        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFslave003.parquet");
+        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+//        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFslave003.parquet");
         dataset.show();
     }
     
     private void ConvertCSVtoDirectRDFTriple(String args[], JavaSparkContext spark, SparkSession ss)
     {
-        JavaRDD<String> lines = spark.textFile(args[0]);
+        JavaRDD<String> lines = spark.textFile("/Users/user/NetBeansProjects/Legacy2RDF/customers.csv");
         String header = lines.first();//take out header
         String headers[] = header.split(",");
         
