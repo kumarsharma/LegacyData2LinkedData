@@ -100,6 +100,9 @@ public class MainWindow extends javax.swing.JFrame {
         jButton3 = new javax.swing.JButton();
         jLabel17 = new javax.swing.JLabel();
         txtDsUri = new javax.swing.JTextField();
+        jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        addRDFLinkCheckBox = new java.awt.Checkbox();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -152,7 +155,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         jLabel8.setText("0:0");
 
-        jButton1.setText("Convert");
+        jButton1.setText("To RDF");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
@@ -234,6 +237,22 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
 
+        jButton4.setText("To RDF Using Spark");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
+        jButton5.setText("To Text");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        addRDFLinkCheckBox.setLabel("Add RDF Links?");
+
         jMenu1.setText("File");
 
         jMenuItem1.setText("Exit");
@@ -260,15 +279,19 @@ public class MainWindow extends javax.swing.JFrame {
                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                     .add(layout.createSequentialGroup()
                         .add(21, 21, 21)
-                        .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.TRAILING)
+                        .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                             .add(layout.createSequentialGroup()
                                 .add(jLabel1)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(txtFileName, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 243, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
-                            .add(jButton1))
+                            .add(layout.createSequentialGroup()
+                                .add(jButton1)
+                                .add(18, 18, 18)
+                                .add(jButton5)
+                                .add(18, 18, 18)
+                                .add(jButton4)))
                         .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                             .add(layout.createSequentialGroup()
-                                .add(68, 68, 68)
                                 .add(jLabel4)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                                 .add(lblFileSize, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 60, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
@@ -286,9 +309,11 @@ public class MainWindow extends javax.swing.JFrame {
                                             .add(jLabel8)))
                                     .add(jLabel7)))
                             .add(layout.createSequentialGroup()
-                                .add(51, 51, 51)
+                                .add(10, 10, 10)
+                                .add(addRDFLinkCheckBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                .add(158, 158, 158)
                                 .add(jButton2)
-                                .add(349, 349, 349)
+                                .add(213, 213, 213)
                                 .add(jButton3))))
                     .add(layout.createSequentialGroup()
                         .add(139, 139, 139)
@@ -349,7 +374,7 @@ public class MainWindow extends javax.swing.JFrame {
                             .add(layout.createSequentialGroup()
                                 .add(226, 226, 226)
                                 .add(jLabel9)))))
-                .addContainerGap())
+                .addContainerGap(org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
@@ -369,11 +394,14 @@ public class MainWindow extends javax.swing.JFrame {
                     .add(jLabel8)
                     .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.BASELINE)
                         .add(jButton1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 41, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
-                        .add(jButton2, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 41, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
+                        .add(jButton2, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 41, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                        .add(jButton4, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 41, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                        .add(jButton5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 41, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                     .add(layout.createSequentialGroup()
                         .add(jLabel7)
                         .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
-                        .add(jButton3)))
+                        .add(jButton3))
+                    .add(addRDFLinkCheckBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(jSeparator1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 30, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
@@ -451,8 +479,6 @@ public class MainWindow extends javax.swing.JFrame {
         {
             //... The user selected a file, get it, use it.
             mar21File = _fileChooser.getSelectedFile();
-            
-
             //... Update user interface.
             txtFileName.setText(mar21File.getPath());
         }
@@ -466,8 +492,9 @@ public class MainWindow extends javax.swing.JFrame {
            return;
         }
         
-        MarcConverter converter = new MarcConverter();
-        biboModel = converter.converMarcWithFile(mar21File, textPaneMarc, textPaneLD);
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 100, addRDFLinkCheckBox.getState());
+        biboModel = converter.ConverMarcWithFile();
+//        converter.ConvertMarc21ToRDFUsingSpark();
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -524,6 +551,29 @@ public class MainWindow extends javax.swing.JFrame {
     private void txtDsUriActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDsUriActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtDsUriActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        
+        if(null == this.mar21File)
+        {
+           JOptionPane.showMessageDialog(null, "Please select file first!");
+           return;
+        }
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 100, addRDFLinkCheckBox.getState());
+        converter.ConvertMarc21ToRDFUsingSpark();
+        
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+
+        if(null == this.mar21File)
+        {
+           JOptionPane.showMessageDialog(null, "Please select file first!");
+           return;
+        }
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 100, addRDFLinkCheckBox.getState());
+        converter.converMarcToText();
+    }//GEN-LAST:event_jButton5ActionPerformed
 
     
      private void writeModelToTextArea(Model m, String format, JTextPane pane)
@@ -598,10 +648,13 @@ public class MainWindow extends javax.swing.JFrame {
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private java.awt.Checkbox addRDFLinkCheckBox;
     private javax.swing.Box.Filler filler2;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;

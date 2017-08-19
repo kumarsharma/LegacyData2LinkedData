@@ -35,7 +35,26 @@ import com.hp.hpl.jena.vocabulary.VCARD;
 import Vocabularies.marcont;
 import java.io.OutputStream;
 import java.io.FileOutputStream;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.broadcast.Broadcast;
 import org.marc4j.MarcTxtWriter;
+import MLTools.RDFTriple;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import MLTools.RDFTriple;
+import org.apache.spark.api.java.function.VoidFunction;
+import scala.Tuple2;
 
 /**
  *
@@ -43,10 +62,13 @@ import org.marc4j.MarcTxtWriter;
  */
 public class MarcConverter {
     
-    File marcFileName;
+    File marcFile;
     Model biboModel, foafModel;
+    JTextPane pane, pane2;
+    int recordLimit;
+    boolean addRDFLinks;
     
-    public MarcConverter()
+    public MarcConverter(File mFile, JTextPane pane, JTextPane pane2, int recordLimit, boolean addRDFLinks)
     {
         biboModel = ModelFactory.createDefaultModel();
         foafModel = ModelFactory.createDefaultModel();
@@ -69,18 +91,19 @@ public class MarcConverter {
         foafModel.setNsPrefix("marcont", marcont.getURI());
         foafModel.setNsPrefix("VCARD", VCARD.getURI());
         foafModel.setNsPrefix("rdagroup1elements", RDA1.getURI());
+        
+        this.marcFile = mFile;
+        this.pane = pane;
+        this.pane2 = pane2;
+        this.recordLimit = recordLimit;
     }
     
-    public Model converMarcWithFile(File mFile, JTextPane pane, JTextPane pane2) 
+    public Model ConverMarcWithFile() 
     {
-        this.marcFileName = mFile;
         InputStream in = null;
-        OutputStream out = null;
-
         try{
             
-            in = new FileInputStream(this.marcFileName.getAbsolutePath());
-            out = new FileOutputStream("/Users/user/NetBeansProjects/SparkSample/marctxt.txt");
+            in = new FileInputStream(this.marcFile.getAbsolutePath());
         }
         catch(java.io.FileNotFoundException e)
         {
@@ -97,22 +120,56 @@ public class MarcConverter {
         String pane2Text = pane2.getText();
         
         int recordCount = 0;
-        
-        String data = "";
-        
+        while(reader.hasNext())
+        {
+            try{
+                recordCount++;
+                Record record = reader.next(); 
+                paneText = paneText.concat(record.toString() + "ENDRECORD");
+                Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, addRDFLinks);
+                System.out.println("Record Count: " + recordCount); 
+
+                if(recordCount > this.recordLimit)
+                    break;
+                }catch(org.marc4j.MarcException me){}
+        }
+        pane.setText(paneText);
+        System.out.println("Writing to text area");
+        this.writeModelToTextArea(biboModel, "RDF/XML", pane2);
+        this.writeModelToFile(biboModel, "RDF/XML", "mark21rdfdata");
+        return biboModel;
+    }
+    
+    public void converMarcToText() 
+    {
+        InputStream in = null;
+        OutputStream out = null;
+
+        try{
+            
+            in = new FileInputStream(this.marcFile.getAbsolutePath());
+            out = new FileOutputStream("/Users/user/NetBeansProjects/SparkSample/marctxt.txt");
+        }
+        catch(java.io.FileNotFoundException e)
+        {
+           System.out.println("################### ERROR: Supplied File not found ###################"); 
+        }
+                
+        pane.setText("################### Marc21 Records ###################\n");
+        pane2.setText("################### RDF Triples ###################\n");
+        MarcReader reader = new MarcStreamReader(in);        
+        String paneText = "";
+        int recordCount = 0;
         MarcTxtWriter writer = new MarcTxtWriter(out); 
         while(reader.hasNext())
         {
             try{
-                
                     recordCount++;
                     Record record = reader.next(); 
                     writer.write(record);
-                    
                     paneText = paneText.concat(record.toString() + "ENDRECORD");
-                    Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, true);
                     System.out.println("Record Count: " + recordCount);                            
-                    if(recordCount > 100)
+                    if(recordCount > this.recordLimit)
                         break;
                 }catch(org.marc4j.MarcException me){}
         }
@@ -122,43 +179,130 @@ public class MarcConverter {
         out.close();
         }catch(Exception e){}
         System.out.println("MARC 21 data as string: "+paneText);
-        
-        pane.setText(paneText);
-        
-        System.out.println("Writing to text area");
-        
-        this.writeModelToTextArea(biboModel, "RDF/XML", pane2);
-        this.writeModelToFile(biboModel, "RDF/XML", "mark21rdfdata");
-        
-        NsIterator it = biboModel.listNameSpaces();
-        System.out.println("Listing NS");
-        while(it.hasNext())
-        {
-            System.out.println("NS: " + it.nextNs());
-        }
-        
-        return biboModel;
+        pane.setText(paneText);        
     }
+    
+     public void ConvertMarc21ToRDFUsingSpark()
+    {
+        SparkSession sparkSession = SparkSession
+			      .builder()
+			      .appName("MarcRecordReader")
+			      .master("local")
+                              .config("spark.driver.cores", 2)
+			      .getOrCreate();
+            
+        JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
+        Configuration configuration = new Configuration();
+        configuration.set("textinputformat.record.delimiter", "LEADER");
+        
+        String path = this.marcFile.getAbsolutePath();
+        configuration.set("mapreduce.input.fileinputformat.inputdir", path);
+            
+        JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
+        JavaRDD<Text> textRDD = javaPairRDD.values(); 
+        
+        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
+        Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
+        
+        JavaRDD<String> marc_rdf = textRDD.map((Text text) -> {
+            
+            String line = text.toString();
+            String modStr = "";
+            if(line.length()>50)
+            {
+                line = "LEADER"+line;
+                StringToMarc reader = new StringToMarc();
+                Record record = reader.recordFromString(line);
+                String baseUri = broadcastBasePropertyURI.getValue();
+                Model dataModel = ModelFactory.createDefaultModel();
+                Model dataModel2 = ModelFactory.createDefaultModel();
+                dataModel.setNsPrefix("property", baseUri);
+                Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
+                String syntax = "N-TRIPLES";
+                StringWriter out = new StringWriter();
+                dataModel.write(out, syntax);
+                modStr = out.toString();
+            }
+            else
+            {
+                System.out.println("ERROR: " + line);
+            }
+            return modStr;
+        });
+        
+        JavaRDD<String> rdf_lines = marc_rdf.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
+        
+        JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
+            
+            Pattern pattern = Pattern.compile("<(.*?)>");
+            Matcher matcher = pattern.matcher(line);
+            RDFTriple triple = new RDFTriple();
+            int count = 0;
+            int end = 0;
+            int totalLength = line.length();
+            while(matcher.find())
+            {
+                if(count==0)
+                {
+                    String s = matcher.group(1);
+                    triple.setSubject(s);
+                    count +=1;
+                }
+                else if(count==1)
+                {
+                    String p = matcher.group(1);
+                    triple.setPredictae(p);
+                    count +=1;
+                    end = matcher.end();
+                }
+                else if(count==2)
+                {
+                    String o = matcher.group(1);
+                    triple.equals(o);
+                    count +=1;
+                }
+                
+                if (count == 2){
+                    String o = line.substring(end+1,totalLength-2);
+                    triple.setObject(o);
+                }
+            }
+            return triple;
+        });
+        rdf_triples.collect();
+        Dataset<Row> dataset = sparkSession.createDataFrame(rdf_triples, RDFTriple.class); 
+        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+//        dataset.show();
+//        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDF.parquet");
+        spark.stop();
+    }
+     
+     private void showCSVDataFromParquetFile(JavaSparkContext spark, SparkSession ss)
+     {
+        Dataset<Row> ds = ss.read().parquet("/usr/local/hadoop/input/Marc21ToRDF.parquet");
+        ds.createOrReplaceTempView("rdf_triples");
+//        ds.select("subject").show();
+        ds.filter("subject='http://klyuniv.ac.in/ontology/resource#_39'").filter("predicate='http://klyuniv.ac.in/ontology/property#Phone'").show();
+//        Dataset<Row> namesDF = ss.sql("SELECT subject from rdf_triples where object>42");
+//        namesDF.show();
+//        dataset.printSchema();
+//        Dataset<Row> subDS = ss.sql("SELECT * FROM rdf_triples where $\"predicate\" === \"<http://klyuniv.ac.in/ontology/property#Phone>\"");
+//        subDS.show();
+     }
     
     private void writeModelToTextArea(Model m, String format, JTextPane pane)
     {
         pane.setText("");
          //redirect output to textarea
         ByteArrayOutputStream pipeOut = new ByteArrayOutputStream();
-
          // Store the current System.out
         PrintStream old_out = System.out;
-       
          // Replace redirect output to our stream
         System.setOut(new PrintStream(pipeOut));
-
-
         // Revert back to the old System.out
         System.setOut(old_out);
-        
 //         m.write(pipeOut, "N3");
         m.write(pipeOut, format);
-         
          Long noOfStmts = m.size();
          String no_ofStmts = noOfStmts.toString();
          

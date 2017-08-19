@@ -19,6 +19,5 @@ public class LegacyData2LinkedData {
         mainWindow.setSize(1200, 800);
         mainWindow.setLocation(250, 60);
         mainWindow.setVisible(true);
-        
     }
 }
