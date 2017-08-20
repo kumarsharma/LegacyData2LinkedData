@@ -19,19 +19,17 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import java.util.Arrays;
-import MLTools.RDFTriple;
 import Mappings.Marc2RDFMapper;
+import java.io.Serializable;
+import org.apache.spark.api.java.function.Function;
 /**
  *
  * @author userqq
  */
-public class Marc2RDFConverter {
+public class Marc2RDFConverter implements Serializable  {
 
 public Marc2RDFConverter(){};
 
@@ -40,7 +38,8 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-			      .master("spark://192.168.1.101:8080")
+//                              .master("local")
+			      .master("spark://192.168.1.101:7077")
                               .config("spark.driver.cores", 2)
 			      .getOrCreate();
             
@@ -57,7 +56,7 @@ public Marc2RDFConverter(){};
     {
         Configuration configuration = new Configuration();
         configuration.set("textinputformat.record.delimiter", "LEADER");
-        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/NetBeansProjects/SparkSample/marctxt2.txt");
+        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/Desktop/PhD/ResearchData/marctxt2.txt");
             
         JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
         JavaRDD<Text> textRDD = javaPairRDD.values();    
@@ -66,30 +65,36 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
-        JavaRDD<String> rdd_customers = textRDD.map((Text text) -> {
-            
-            String line = text.toString();
-            String modStr = "";
-            if(line.length()>50)
-            {
-                line = "LEADER"+line;
-                StringToMarc reader = new StringToMarc();
-                Record record = reader.recordFromString(line);
-                String baseUri = broadcastBasePropertyURI.getValue();
-                Model dataModel = ModelFactory.createDefaultModel();
-                Model dataModel2 = ModelFactory.createDefaultModel();
-                dataModel.setNsPrefix("property", baseUri);
-                Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
-                String syntax = "N-TRIPLES";
-                StringWriter out = new StringWriter();
-                dataModel.write(out, syntax);
-                modStr = out.toString();
+        JavaRDD<String> rdd_customers = textRDD.map(new Function<Text, String>() {
+
+            @Override
+            public String call(Text text) {
+                String line = text.toString();
+                String modStr = "";
+                if(line.length()>50)
+                {
+                    line = "LEADER"+line;
+                    StringToMarc reader = new StringToMarc();
+                    Record record = reader.recordFromString(line);
+                    String baseUri = broadcastBasePropertyURI.getValue();
+                    Model dataModel = ModelFactory.createDefaultModel();
+                    Model dataModel2 = ModelFactory.createDefaultModel();
+                    dataModel.setNsPrefix("property", baseUri);
+                    Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
+                    String syntax = "N-TRIPLES";
+                    StringWriter out = new StringWriter();
+                    dataModel.write(out, syntax);
+                    modStr = out.toString();
+                    System.out.println("RDF from Marc21:"+modStr);
+                }
+                
+                return modStr;
             }
-         
-            return modStr;
         });
+        rdd_customers.collect();
+//        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
-        JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
+        /*JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
             
             Pattern pattern = Pattern.compile("<(.*?)>");
@@ -128,15 +133,19 @@ public Marc2RDFConverter(){};
             return triple;
         });
         
-        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+        rdf_triples.collect();*/
+        
+//        rdf_triples.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
+        
+//        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
+//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
 //        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFslave003.parquet");
-        dataset.show();
+//        dataset.show();
     }
     
     private void ConvertCSVtoDirectRDFTriple(String args[], JavaSparkContext spark, SparkSession ss)
     {
-        JavaRDD<String> lines = spark.textFile("/Users/user/NetBeansProjects/Legacy2RDF/customers.csv");
+        JavaRDD<String> lines = spark.textFile("/Users/user/NetBeansProjects/LegacyData2LinkedData/customers.csv");
         String header = lines.first();//take out header
         String headers[] = header.split(",");
         
@@ -144,10 +153,17 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
-        JavaRDD<String> filteredRows = lines.filter(row -> !row.equals(header));//filter header
+        JavaRDD<String> filteredRows = lines.filter(new Function<String, Boolean>() {
+
+            @Override
+            public Boolean call(String row) {
+                return !row.equals(header);
+            }
+        });//filter header
+        
         
         //convert each line of csv data into rdf data in n-triples format
-        JavaRDD<String> rdd_ntriples = filteredRows.map((String line) -> {
+        /*JavaRDD<String> rdd_ntriples = filteredRows.map((String line) -> {
             
             String fields[] = line.split(",");
 
@@ -170,8 +186,9 @@ public Marc2RDFConverter(){};
             biboModel.write(out, syntax);
             String modStr = out.toString();
             return modStr;
-        });
-        
+        });*/
+        filteredRows.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/csv_rdf_triples");
+        /*
         //convert n-triples into individual lines
         JavaRDD<String> rdf_lines = rdd_ntriples.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         
@@ -213,11 +230,11 @@ public Marc2RDFConverter(){};
                 }
             }
             return triple;
-        });
+        });*/
         
         //create data-frmae
-        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
+//        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
+//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/csv_triples.parquet");
     }
     
     private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
@@ -247,5 +264,34 @@ public Marc2RDFConverter(){};
         ds2.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
      }
+}
+
+ class TrippleMapper implements Function, Serializable
+{
+    @Override
+    public String call(Object t1) throws Exception {
+        
+        String line = t1.toString();
+        String modStr = "";
+        if(line.length()>50)
+        {
+            line = "LEADER"+line;
+            StringToMarc reader = new StringToMarc();
+            Record record = reader.recordFromString(line);
+            String baseUri = "http://klyuniv.ac.in/ontology/property#";
+            Model dataModel = ModelFactory.createDefaultModel();
+            Model dataModel2 = ModelFactory.createDefaultModel();
+            dataModel.setNsPrefix("property", baseUri);
+            Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
+            String syntax = "N-TRIPLES";
+            StringWriter out = new StringWriter();
+            dataModel.write(out, syntax);
+            modStr = out.toString();
+            System.out.println("RDF from Marc21:"+modStr);
+        }
+
+        return modStr;
+    }
+    
 }
 

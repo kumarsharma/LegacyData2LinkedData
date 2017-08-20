@@ -14,7 +14,7 @@ import org.marc4j.marc.DataField;
 import org.marc4j.marc.Subfield;
 
 //import org.dspace.adapters.rdf.vocabularies.DC;
-import org.dspace.adapters.rdf.vocabularies.DS;
+//import org.dspace.adapters.rdf.vocabularies.DS;
 
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.Iterator;
