@@ -40,14 +40,14 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-			      .master("local")
-                              .config("spark.driver.cores", 1)
+			      .master("spark://192.168.1.101:8080")
+                              .config("spark.driver.cores", 2)
 			      .getOrCreate();
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-            mrc.ShowataFromParquetFile(spark, sparkSession);
-//            mrc.convertMarctoRDF(spark, sparkSession);
+//            mrc.ShowataFromParquetFile(spark, sparkSession);
+            mrc.convertMarctoRDF(spark, sparkSession);
 //            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
             
         spark.stop();
