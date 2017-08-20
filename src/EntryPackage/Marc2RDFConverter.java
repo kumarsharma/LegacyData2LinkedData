@@ -70,18 +70,9 @@ public Marc2RDFConverter(){};
 //        List<Text> textRDD = javaPairRDD.values().collect();   
         //textRDD.saveAsTextFile("/Users/user/NetBeansProjects/SparkSample/marctxt3.txt");
             
-        JavaRDD<String> rddsc = javaPairRDD.flatMap(
-            
-            new FlatMapFunction<Tuple2<LongWritable, Text>, String>() {
-                
-                @Override
-                public Iterator<String> call(Tuple2<LongWritable, Text> t) throws Exception {
-                    
-                    return Arrays.asList(t._2.toString()).iterator();
-                }
-            });
-        List<String> rddList = rddsc.collect();
-        JavaRDD<String> rddT = spark.parallelize(rddList);
+        List<String> rddList = javaPairRDD.flatMap(new FlatMapFunctionImpl()).collect();
+//        List<String> rddList = rddsc.collect();
+        JavaRDD<String> rddsc = spark.parallelize(rddList);
         
         /*
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
@@ -116,7 +107,7 @@ public Marc2RDFConverter(){};
             }
         });*/
 //        rdd_customers.collect();
-        rddT.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFTextSSS");
+        rddsc.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFTextSSS");
         
         /*JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
@@ -380,6 +371,17 @@ public Marc2RDFConverter(){};
         ds2.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
      }
+
+    private static class FlatMapFunctionImpl implements FlatMapFunction<Tuple2<LongWritable, Text>, String>, Serializable {
+
+        public FlatMapFunctionImpl() {
+        }
+
+        @Override
+        public Iterator<String> call(Tuple2<LongWritable, Text> t) {
+            return Arrays.asList(t._2.toString()).iterator();
+        }
+    }
 }
 
  class TrippleMapper implements Function, Serializable
