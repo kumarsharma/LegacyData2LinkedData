@@ -184,7 +184,7 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         
 //        textRDD.foreachPartition(null);
-        
+        /*
         textRDD.foreachPartition(new VoidFunction<Iterator<Text>>() {
 
             @Override
@@ -213,10 +213,10 @@ public Marc2RDFConverter(){};
                     }
                 }
             }
-        });
+        });*/
             
-        /*
-        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
+        
+//        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
         JavaRDD<String> rdd_customers = textRDD.map(new Function<Text, String>() {
@@ -244,9 +244,9 @@ public Marc2RDFConverter(){};
                 
                 return modStr;
             }
-        });*/
+        });
 //        rdd_customers.collect();
-//        textRDD.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
+        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
         /*JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
