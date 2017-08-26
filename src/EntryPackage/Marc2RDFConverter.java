@@ -30,11 +30,15 @@ import org.apache.spark.api.java.function.Function;
 import java.util.List;
 import scala.Tuple2;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import java.util.regex.Pattern;
+import org.apache.spark.api.java.function.VoidFunction;
 /**
  *
  * @author userqq
  */
 public class Marc2RDFConverter implements Serializable  {
+    
+    private static final Pattern SPACE = Pattern.compile(" ");
 
 public Marc2RDFConverter(){};
 
@@ -44,9 +48,9 @@ public Marc2RDFConverter(){};
 			      .builder()
 			      .appName("MarcRecordReader")
 //                              .master("local")
-			      .master("spark://192.168.1.102:7077")
-                              .config("spark.driver.cores", 1)
-                              .config("spark.executor.uri", "/Users/user/spark-2.1.1-bin-hadoop2.7")
+			      .master("spark://192.168.1.106:7077")
+                              .config("spark.driver.cores", 2)
+                              .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
@@ -54,8 +58,9 @@ public Marc2RDFConverter(){};
             Marc2RDFConverter mrc = new Marc2RDFConverter();
 //            mrc.ConvertListMarctoRDF(spark, sparkSession);
 //            mrc.ShowataFromParquetFile(spark, sparkSession);
-//            mrc.convertMarctoRDF(spark, sparkSession);
-            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
+            mrc.convertMarctoRDF(spark, sparkSession);
+//            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
+//            mrc.WordCount(spark, sparkSession);
             
         spark.stop();
     }
@@ -176,9 +181,41 @@ public Marc2RDFConverter(){};
             
         JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
         JavaRDD<Text> textRDD = javaPairRDD.values();   
-        //textRDD.saveAsTextFile("/Users/user/NetBeansProjects/SparkSample/marctxt3.txt");
-            
+        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         
+//        textRDD.foreachPartition(null);
+        
+        textRDD.foreachPartition(new VoidFunction<Iterator<Text>>() {
+
+            @Override
+            public void call(Iterator<Text> texts) {
+                
+                while(texts.hasNext())
+                {
+                    Text text = texts.next();
+                    String line = text.toString();
+                    String modStr = "";
+                    if(line.length()>50)
+                    {
+                        line = "LEADER"+line;
+                        StringToMarc reader = new StringToMarc();
+                        Record record = reader.recordFromString(line);
+                        String baseUri = broadcastBasePropertyURI.getValue();
+                        Model dataModel = ModelFactory.createDefaultModel();
+                        Model dataModel2 = ModelFactory.createDefaultModel();
+                        dataModel.setNsPrefix("property", baseUri);
+                        Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
+                        String syntax = "N-TRIPLES";
+                        StringWriter out = new StringWriter();
+                        dataModel.write(out, syntax);
+                        modStr = out.toString();
+                        System.out.println("RDF from Marc21:"+modStr);
+                    }
+                }
+            }
+        });
+            
+        /*
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
@@ -207,9 +244,9 @@ public Marc2RDFConverter(){};
                 
                 return modStr;
             }
-        });
+        });*/
 //        rdd_customers.collect();
-        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
+//        textRDD.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
         /*JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
@@ -270,18 +307,11 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
-        /*JavaRDD<String> filteredRows = lines.filter(new Function<String, Boolean>() {
-
-            @Override
-            public Boolean call(String row) {
-                return !row.equals(header);
-            }
-        });//filter header*/
-        
+        JavaRDD<String> filteredRows = lines.filter(new FunctionImpl1(header));//filter header
         
         //convert each line of csv data into rdf data in n-triples format
-        JavaRDD<String> rdd_ntriples = lines.map(new FunctionImpl(broadcastHeader, broadcastBasePropertyURI, broadcastBaseResourceURI));
-        rdd_ntriples.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/csv_rdf_triples");
+//        JavaRDD<String> rdd_ntriples = lines.map(new FunctionImpl(broadcastHeader, broadcastBasePropertyURI, broadcastBaseResourceURI));
+        filteredRows.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/csv_rdf_triples");
         
 //        rdd_ntriples.collect();
         /*
@@ -360,6 +390,18 @@ public Marc2RDFConverter(){};
         ds2.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
      }
+    
+    private void WordCount(JavaSparkContext spark, SparkSession ss)
+    {
+        JavaRDD<String> lines = spark.textFile("/Users/user/NetBeansProjects/LegacyData2LinkedData/customers.csv");
+        JavaRDD<String> words = lines.flatMap(s -> Arrays.asList(SPACE.split(s)).iterator());
+        JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
+        JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
+        List<Tuple2<String, Integer>> output = counts.collect();
+        for (Tuple2<?,?> tuple : output) {
+          System.out.println(tuple._1() + ": " + tuple._2());
+        }
+    }
 
     private static class FunctionImpl implements Function<String, String>, Serializable {
 
@@ -402,6 +444,20 @@ public Marc2RDFConverter(){};
 //            biboModel.write(out, syntax);
             String modStr = N3;
             return modStr;
+        }
+    }
+
+    public static class FunctionImpl1 implements Function<String, Boolean>, Serializable {
+
+        private final String header;
+
+        public FunctionImpl1(String header) {
+            this.header = header;
+        }
+
+        @Override
+        public Boolean call(String row) {
+            return !row.equals(header);
         }
     }
 }
