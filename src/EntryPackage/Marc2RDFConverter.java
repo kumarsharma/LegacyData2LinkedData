@@ -73,31 +73,27 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
-        JavaRDD<String> rdd_customers = textRDD.map(new Function<Text, String>() {
-
-            @Override
-            public String call(Text text) {
-                String line = text.toString();
-                String modStr = "";
-                if(line.length()>50)
-                {
-                    line = "LEADER"+line;
-                    StringToMarc reader = new StringToMarc();
-                    Record record = reader.recordFromString(line);
-                    String baseUri = broadcastBasePropertyURI.getValue();
-                    Model dataModel = ModelFactory.createDefaultModel();
-                    Model dataModel2 = ModelFactory.createDefaultModel();
-                    dataModel.setNsPrefix("property", baseUri);
-                    Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
-                    String syntax = "N-TRIPLES";
-                    StringWriter out = new StringWriter();
-                    dataModel.write(out, syntax);
-                    modStr = out.toString();
-                    System.out.println("RDF from Marc21:"+modStr);
-                }
-                
-                return modStr;
+        JavaRDD<String> rdd_customers = textRDD.map((Text text) -> {
+            String line = text.toString();
+            String modStr = "";
+            if(line.length()>50)
+            {
+                line = "LEADER"+line;
+                StringToMarc reader = new StringToMarc();
+                Record record = reader.recordFromString(line);
+                String baseUri = broadcastBasePropertyURI.getValue();
+                Model dataModel = ModelFactory.createDefaultModel();
+                Model dataModel2 = ModelFactory.createDefaultModel();
+                dataModel.setNsPrefix("property", baseUri);
+                Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
+                String syntax = "N-TRIPLES";
+                StringWriter out = new StringWriter();
+                dataModel.write(out, syntax);
+                modStr = out.toString();
+                System.out.println("RDF from Marc21:"+modStr);
             }
+            
+            return modStr;
         });
         JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
