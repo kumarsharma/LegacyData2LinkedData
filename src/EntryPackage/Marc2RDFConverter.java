@@ -44,17 +44,18 @@ public Marc2RDFConverter(){};
 			      .builder()
 			      .appName("MarcRecordReader")
 //                              .master("local")
-			      .master("spark://192.168.1.101:7077")
-                              .config("spark.driver.cores", 2)
+			      .master("spark://192.168.1.102:7077")
+                              .config("spark.driver.cores", 1)
+                              .config("spark.executor.uri", "/Users/user/spark-2.1.1-bin-hadoop2.7")
 			      .getOrCreate();
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
             
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-            mrc.ConvertListMarctoRDF(spark, sparkSession);
+//            mrc.ConvertListMarctoRDF(spark, sparkSession);
 //            mrc.ShowataFromParquetFile(spark, sparkSession);
 //            mrc.convertMarctoRDF(spark, sparkSession);
-//            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
+            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
             
         spark.stop();
     }
@@ -70,9 +71,18 @@ public Marc2RDFConverter(){};
 //        List<Text> textRDD = javaPairRDD.values().collect();   
         //textRDD.saveAsTextFile("/Users/user/NetBeansProjects/SparkSample/marctxt3.txt");
             
-        List<String> rddList = javaPairRDD.flatMap(new FlatMapFunctionImpl()).collect();
-//        List<String> rddList = rddsc.collect();
-        JavaRDD<String> rddsc = spark.parallelize(rddList);
+        JavaRDD<String> rddsc = javaPairRDD.flatMap(
+            
+            new FlatMapFunction<Tuple2<LongWritable, Text>, String>() {
+                
+                @Override
+                public Iterator<String> call(Tuple2<LongWritable, Text> t) throws Exception {
+                    
+                    return Arrays.asList(t._2.toString()).iterator();
+                }
+            });
+        List<String> rddList = rddsc.collect();
+        JavaRDD<String> rddT = spark.parallelize(rddList);
         
         /*
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
@@ -260,41 +270,20 @@ public Marc2RDFConverter(){};
         Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
         Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
         
-        JavaRDD<String> filteredRows = lines.filter(new Function<String, Boolean>() {
+        /*JavaRDD<String> filteredRows = lines.filter(new Function<String, Boolean>() {
 
             @Override
             public Boolean call(String row) {
                 return !row.equals(header);
             }
-        });//filter header
+        });//filter header*/
         
         
         //convert each line of csv data into rdf data in n-triples format
-        /*JavaRDD<String> rdd_ntriples = filteredRows.map((String line) -> {
-            
-            String fields[] = line.split(",");
-
-            String p[] = broadcastHeader.value();
-            String baseUri = broadcastBasePropertyURI.getValue();
-            String baseResUri = broadcastBaseResourceURI.getValue();
-            Model biboModel = ModelFactory.createDefaultModel();
-            biboModel.setNsPrefix("property", baseUri);
-            Resource aRes = biboModel.createResource(baseResUri+"_"+fields[0]);
-
-            int i = 0;
-            for(String h : p)
-            {
-                aRes.addProperty(new PropertyImpl(baseUri, h), fields[i]);
-                i++;
-            }
-
-            String syntax = "N-TRIPLES"; // also try "N-TRIPLE" and "TURTLE"
-            StringWriter out = new StringWriter();
-            biboModel.write(out, syntax);
-            String modStr = out.toString();
-            return modStr;
-        });*/
-        filteredRows.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/csv_rdf_triples");
+        JavaRDD<String> rdd_ntriples = lines.map(new FunctionImpl(broadcastHeader, broadcastBasePropertyURI, broadcastBaseResourceURI));
+        rdd_ntriples.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/csv_rdf_triples");
+        
+//        rdd_ntriples.collect();
         /*
         //convert n-triples into individual lines
         JavaRDD<String> rdf_lines = rdd_ntriples.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
@@ -372,14 +361,47 @@ public Marc2RDFConverter(){};
 //        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
      }
 
-    private static class FlatMapFunctionImpl implements FlatMapFunction<Tuple2<LongWritable, Text>, String>, Serializable {
+    private static class FunctionImpl implements Function<String, String>, Serializable {
 
-        public FlatMapFunctionImpl() {
+        private final Broadcast<String[]> broadcastHeader;
+        private final Broadcast<String> broadcastBasePropertyURI;
+        private final Broadcast<String> broadcastBaseResourceURI;
+
+        public FunctionImpl(Broadcast<String[]> broadcastHeader, Broadcast<String> broadcastBasePropertyURI, Broadcast<String> broadcastBaseResourceURI) {
+            this.broadcastHeader = broadcastHeader;
+            this.broadcastBasePropertyURI = broadcastBasePropertyURI;
+            this.broadcastBaseResourceURI = broadcastBaseResourceURI;
         }
 
         @Override
-        public Iterator<String> call(Tuple2<LongWritable, Text> t) {
-            return Arrays.asList(t._2.toString()).iterator();
+        public String call(String line) {
+            String fields[] = line.split(",");
+            
+            String p[] = broadcastHeader.value();
+            String baseUri = broadcastBasePropertyURI.getValue();
+            String baseResUri = broadcastBaseResourceURI.getValue();
+//            Model biboModel = ModelFactory.createDefaultModel();
+//            biboModel.setNsPrefix("property", baseUri);
+//            Resource aRes = biboModel.createResource(baseResUri+"_"+fields[0]);
+            
+            int i = 0;
+            String resource = baseResUri+"_"+fields[0];
+            
+            String N3 = "";
+            for(String h : p)
+            {
+//                aRes.addProperty(new PropertyImpl(baseUri, h), fields[i]);
+                String property = baseUri+h;
+                String n3line = resource+" "+property+" "+fields[i]+" . \n";
+                N3 += n3line;
+                i++;
+            }
+            
+//            String syntax = "N-TRIPLES"; // also try "N-TRIPLE" and "TURTLE"
+//            StringWriter out = new StringWriter();
+//            biboModel.write(out, syntax);
+            String modStr = N3;
+            return modStr;
         }
     }
 }
