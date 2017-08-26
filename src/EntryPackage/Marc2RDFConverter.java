@@ -32,6 +32,8 @@ import scala.Tuple2;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import java.util.regex.Pattern;
 import org.apache.spark.api.java.function.VoidFunction;
+import MLTools.RDFTriple;
+import java.util.regex.Matcher;
 /**
  *
  * @author userqq
@@ -248,7 +250,7 @@ public Marc2RDFConverter(){};
 //        rdd_customers.collect();
         rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
-        /*JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
+        JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
             
             Pattern pattern = Pattern.compile("<(.*?)>");
@@ -287,12 +289,10 @@ public Marc2RDFConverter(){};
             return triple;
         });
         
-        rdf_triples.collect();*/
-        
 //        rdf_triples.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
-//        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
+        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
 //        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFslave003.parquet");
 //        dataset.show();
     }
