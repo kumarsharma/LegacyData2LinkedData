@@ -248,7 +248,7 @@ public Marc2RDFConverter(){};
             }
         });
 //        rdd_customers.collect();
-        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
+//        rdd_customers.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
         
         JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
