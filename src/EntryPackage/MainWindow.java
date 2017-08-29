@@ -7,29 +7,11 @@ package EntryPackage;
 import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import MLTools.Ont2Java;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.ks.data_provenance.voidgenerator;
-import static java.awt.EventQueue.invokeLater;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import static java.lang.Short.MAX_VALUE;
-import static java.lang.System.out;
-import static java.lang.System.setOut;
-import static java.util.logging.Level.SEVERE;
-import static java.util.logging.Logger.getLogger;
-import static javax.swing.JFileChooser.APPROVE_OPTION;
-import static javax.swing.JOptionPane.showMessageDialog;
 import javax.swing.JTextPane;
-import static javax.swing.UIManager.getInstalledLookAndFeels;
-import static javax.swing.UIManager.setLookAndFeel;
-import static org.jdesktop.layout.GroupLayout.BASELINE;
-import static org.jdesktop.layout.GroupLayout.DEFAULT_SIZE;
-import static org.jdesktop.layout.GroupLayout.LEADING;
-import static org.jdesktop.layout.GroupLayout.PREFERRED_SIZE;
-import static org.jdesktop.layout.GroupLayout.TRAILING;
-import static org.jdesktop.layout.LayoutStyle.RELATED;
-import static org.jdesktop.layout.LayoutStyle.UNRELATED;
 
 /**
  *
@@ -492,9 +474,10 @@ public class MainWindow extends javax.swing.JFrame {
            return;
         }
         
-        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 100, addRDFLinkCheckBox.getState());
-        biboModel = converter.ConverMarcWithFile();
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 0, addRDFLinkCheckBox.getState());
+//        biboModel = converter.ConverMarcWithFile();
 //        converter.ConvertMarc21ToRDFUsingSpark();
+        converter.ConverMarcAndStoreIntoTDB();
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -529,7 +512,6 @@ public class MainWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_txtDsSparqlActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        
         
         voidgenerator voidGen = new voidgenerator();
         voidGen.dsDescription = txtDsDesc.getText();
@@ -581,25 +563,17 @@ public class MainWindow extends javax.swing.JFrame {
         pane.setText("");
          //redirect output to textarea
         ByteArrayOutputStream pipeOut = new ByteArrayOutputStream();
-
          // Store the current System.out
-        PrintStream old_out = System.out;
-       
+        PrintStream old_out = System.out;       
          // Replace redirect output to our stream
         System.setOut(new PrintStream(pipeOut));
-
-
         // Revert back to the old System.out
         System.setOut(old_out);
-        
 //         m.write(pipeOut, "N3");
         m.write(pipeOut, format);
-         
          Long noOfStmts = m.size();
          String no_ofStmts = noOfStmts.toString();
-         
          String stmts = new String(pipeOut.toByteArray());
-
         pane.setText("Number of statements:" + no_ofStmts + "\n" + stmts);
         
     }

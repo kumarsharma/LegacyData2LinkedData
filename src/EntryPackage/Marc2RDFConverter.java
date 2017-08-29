@@ -47,8 +47,8 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-//                              .master("local")
-			      .master("spark://192.168.1.106:7077")
+                              .master("local")
+//			      .master("spark://192.168.1.106:7077")
                               .config("spark.driver.cores", 2)
                               .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();

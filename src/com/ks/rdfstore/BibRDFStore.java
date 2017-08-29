@@ -32,6 +32,7 @@ public class BibRDFStore {
 
     private File tdbDir;
     Dataset bibDataset;
+    Model defaultModel;
    
     String graphName() 
     {
@@ -41,19 +42,28 @@ public class BibRDFStore {
      public BibRDFStore()
     {
         try {
-		File tdb_Dir = new File("/Users/user/BibliographicDatasets");
+		File tdb_Dir = new File("/Users/user/Documents/RDFStore/TDBStore/Experiment1");
 		this.tdbDir = tdb_Dir;
-                
                 bibDataset = TDBFactory.createDataset(tdbDir.getAbsolutePath());
+                defaultModel = bibDataset.getDefaultModel();
             } catch (Exception ex) { ex.printStackTrace(); }
+    }
+     
+    public void addModel(Model m)
+    {
+        defaultModel.add(m);
+    }
+    
+    public void commitAndClose()
+    {
+        defaultModel.commit();
+        defaultModel.close();
     }
     
     public void storeModelIntoTDB(Model m)
     {
         tdbDir.mkdir();
-		
         Model model = bibDataset.getDefaultModel();
-        
         model.add(m);
         model.commit();
         model.close();

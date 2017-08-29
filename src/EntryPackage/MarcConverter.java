@@ -48,13 +48,11 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.marc4j.MarcTxtWriter;
-import MLTools.RDFTriple;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import MLTools.RDFTriple;
-import org.apache.spark.api.java.function.VoidFunction;
-import scala.Tuple2;
+import com.ks.rdfstore.BibRDFStore;
 
 /**
  *
@@ -96,6 +94,35 @@ public class MarcConverter {
         this.pane = pane;
         this.pane2 = pane2;
         this.recordLimit = recordLimit;
+    }
+    
+    private Model getABibModel()
+    {
+        Model m = ModelFactory.createDefaultModel();                
+        m.setNsPrefix("rdf", RDF.getURI());
+        m.setNsPrefix("rdfs", RDFS.getURI());
+        m.setNsPrefix("foaf", FOAF.NS);
+        m.setNsPrefix("DC_11", DC_11.NS);
+        m.setNsPrefix("DC", DCTerms.NS);
+        m.setNsPrefix("marcont", marcont.getURI());
+        m.setNsPrefix("VCARD", VCARD.getURI());
+        m.setNsPrefix("rdagroup1elements", RDA1.getURI());
+        m.setNsPrefix("ol", OL.getURI());
+        return m;
+    }
+    
+    private Model getAFoafModel()
+    {
+        Model m = ModelFactory.createDefaultModel();                
+        m.setNsPrefix("rdfs", RDFS.getURI());
+        m.setNsPrefix("rdf", RDF.getURI());
+        m.setNsPrefix("foaf", FOAF.NS);
+        m.setNsPrefix("DC_11", DC_11.NS);
+        m.setNsPrefix("DC", DCTerms.NS);
+        m.setNsPrefix("marcont", marcont.getURI());
+        m.setNsPrefix("VCARD", VCARD.getURI());
+        m.setNsPrefix("rdagroup1elements", RDA1.getURI());
+        return m;
     }
     
     public Model ConverMarcWithFile() 
@@ -140,6 +167,111 @@ public class MarcConverter {
         return biboModel;
     }
     
+    public Model ConverMarcAndStoreIntoTDB() 
+    {
+        InputStream in = null;
+        try{
+            
+            in = new FileInputStream(this.marcFile.getAbsolutePath());
+        }
+        catch(java.io.FileNotFoundException e)
+        {
+            System.out.println("################### ERROR: Supplied File not found ###################"); 
+           return null;
+        }
+                
+        pane.setText("################### Marc21 Records ###################\n");
+        pane2.setText("################### RDF Triples ###################\n");
+        
+        MarcReader reader = new MarcStreamReader(in);
+        BibRDFStore store = new BibRDFStore();
+        String paneText = "";
+        
+        int recordCount = 0;
+        int modelRecordCountLimit = 10000, modelRecordCount=0;
+        Model bibM = this.getABibModel();
+        Model foafM = this.foafModel;
+        while(reader.hasNext())
+        {
+            try{
+                recordCount++;
+                Record record = reader.next(); 
+                paneText = paneText.concat(record.toString() + "ENDRECORD");
+                
+                Marc2RDFMapper.createResourceFromRecordInModel(record, bibM, foafM, addRDFLinks);
+                System.out.println("Record Count: " + recordCount); 
+                modelRecordCount++;
+                if(modelRecordCount==modelRecordCountLimit)
+                {
+                    store.addModel(biboModel);
+                    store.addModel(bibM);
+                    store.commitAndClose();
+                    modelRecordCount=0;
+                    bibM = this.getABibModel();
+                    foafM = this.foafModel;
+                }
+
+                if(this.recordLimit>0 && recordCount > this.recordLimit)
+                    break;
+                }catch(org.marc4j.MarcException me){}
+        }
+        store.commitAndClose();
+        System.out.println("Legacy data converted into RDF and stored into TDB");
+        pane2.setText("Legacy data converted into RDF and stored into TDB");
+        return biboModel;
+    }
+    
+    public Model ConverMarcAndStoreIntoFiles() 
+    {
+        InputStream in = null;
+        try{
+            
+            in = new FileInputStream(this.marcFile.getAbsolutePath());
+        }
+        catch(java.io.FileNotFoundException e)
+        {
+            System.out.println("################### ERROR: Supplied File not found ###################"); 
+           return null;
+        }
+                
+        pane.setText("################### Marc21 Records ###################\n");
+        pane2.setText("################### RDF Triples ###################\n");
+        
+        MarcReader reader = new MarcStreamReader(in);
+        String paneText = "";
+        
+        int recordCount = 0;
+        int modelRecordCountLimit = 1000, modelRecordCount=0;
+        int partCount = 1;
+        while(reader.hasNext())
+        {
+            try{
+                recordCount++;
+                Record record = reader.next(); 
+                paneText = paneText.concat(record.toString() + "ENDRECORD");
+                
+                Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, addRDFLinks);
+                System.out.println("Record Count: " + recordCount); 
+                modelRecordCount++;
+                if(modelRecordCount==modelRecordCountLimit)
+                {
+                    this.writeModelToFile(biboModel, "RDF/XML", "mark21rdf_part_"+partCount);
+                    biboModel.removeAll();
+                    foafModel.removeAll();
+                    partCount++;
+                    modelRecordCount=0;
+                }
+
+                if(recordCount > this.recordLimit)
+                    break;
+                }catch(org.marc4j.MarcException me){}
+        }
+       
+        System.out.println("Legacy data converted into RDF and stored into Files");
+        pane2.setText("Legacy data converted into RDF and stored into Files");
+        return biboModel;
+    }
+    
     public void converMarcToText() 
     {
         InputStream in = null;
@@ -148,7 +280,7 @@ public class MarcConverter {
         try{
             
             in = new FileInputStream(this.marcFile.getAbsolutePath());
-            out = new FileOutputStream("/Users/user/NetBeansProjects/SparkSample/marctxt.txt");
+            out = new FileOutputStream("/Users/user/Desktop/marctxt.txt");
         }
         catch(java.io.FileNotFoundException e)
         {
@@ -187,8 +319,10 @@ public class MarcConverter {
         SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-			      .master("local")
+//                              .master("local")
+			      .master("spark://192.168.1.106:7077")
                               .config("spark.driver.cores", 2)
+                              .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();
             
         JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
@@ -271,9 +405,7 @@ public class MarcConverter {
         });
         rdf_triples.collect();
         Dataset<Row> dataset = sparkSession.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
-//        dataset.show();
-//        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDF.parquet");
+        dataset.write().parquet("/Users/user/Documents/RDFStore/ParquetStore/Experiment1/Marc21ToRDF.parquet");
         spark.stop();
     }
      
