@@ -5,14 +5,7 @@
 package MappingClasses;
 
 //jena
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
-import com.hp.hpl.jena.rdf.model.*;
-import com.hp.hpl.jena.vocabulary.VCARD;
 import com.hp.hpl.jena.vocabulary.RDF;
-import com.hp.hpl.jena.vocabulary.DCTerms;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.vocabulary.DC_11;
 
@@ -37,19 +30,19 @@ public class ML0_ControlInfo {
         {
             
             case 001:
-                property = DC_11.identifier;
+                property = marcont.hasControlNumber;
                 break;
                 
             case 003:
-                property = DC_11.creator;
+                property = marcont.propertyForName("controlNumberIdentifier");
                 break;
                 
             case 005:
-                property = marcont.hasDate;
+                property = marcont.propertyForName("dateTimeOfLatestTransaction");
                 break;
                 
             case 8:
-                property = marcont.hasCoverage;
+                property = null;//marcont.hasCoverage;
                 break;
                 
 //            case 010:
@@ -69,19 +62,10 @@ public class ML0_ControlInfo {
             break;
                         
             case 020:
-            property = null; //patent control info
-            break;
+                property = null; //patent control info
+                break;
              
-                /*
-                           case 013:
-                property = null; //patent control info
-                break;
-                               
-                               case 013:
-                property = null; //patent control info
-                break;
-                */
-                case 007:
+            case 007:
                 property = DC_11.format;
                 break;
                 
@@ -89,9 +73,12 @@ public class ML0_ControlInfo {
                 property = DC_11.subject;
                 break;
                 
-//            case 010:
-//                property = DC_11.identifier;
-//                break;
+            case 035:
+            {
+                cf.getId();
+                property = DC_11.identifier;
+            }
+                break;
                 
             case 044:
                 property = DC_11.language;

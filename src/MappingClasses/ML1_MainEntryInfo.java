@@ -67,11 +67,7 @@ public class ML1_MainEntryInfo extends ML00_DataInfo {
      public Property getPropertyForSubFieldUsingDataField(Subfield sf, DataField df)
     {
         int dTag = Integer.parseInt(df.getTag());
-        char sTag = sf.getCode();
-        
-      
-       
-        
+        char sTag = sf.getCode(); 
         Property property = null;
                 
         if(dTag == 100 || dTag == 110 || dTag == 111)

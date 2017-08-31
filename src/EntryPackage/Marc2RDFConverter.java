@@ -47,16 +47,16 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-//                              .master("local")
-			      .master("spark://192.168.1.106:7077")
+                              .master("local")
+//			      .master("spark://192.168.1.106:7077")
                               .config("spark.driver.cores", 2)
                               .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();
             
             JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
             Marc2RDFConverter mrc = new Marc2RDFConverter();
-            mrc.ShowataFromParquetFile(spark, sparkSession);
-//            mrc.convertMarctoRDF(spark, sparkSession);
+//            mrc.ShowataFromParquetFile(spark, sparkSession);
+            mrc.convertMarctoRDF(spark, sparkSession);
 //            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
             
         spark.stop();
@@ -66,7 +66,7 @@ public Marc2RDFConverter(){};
     {
         Configuration configuration = new Configuration();
         configuration.set("textinputformat.record.delimiter", "LEADER");
-        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/Desktop/PhD/ResearchData/marctxt2.txt");
+        configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/Desktop/marctxt.txt");
             
         JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
         JavaRDD<Text> textRDD = javaPairRDD.values();   
@@ -81,16 +81,7 @@ public Marc2RDFConverter(){};
                 line = "LEADER"+line;
                 StringToMarc reader = new StringToMarc();
                 Record record = reader.recordFromString(line);
-                String baseUri = broadcastBasePropertyURI.getValue();
-                Model dataModel = ModelFactory.createDefaultModel();
-                Model dataModel2 = ModelFactory.createDefaultModel();
-                dataModel.setNsPrefix("property", baseUri);
-                Marc2RDFMapper.createResourceFromRecordInModel(record, dataModel, dataModel2, false);
-                String syntax = "N-TRIPLES";
-                StringWriter out = new StringWriter();
-                dataModel.write(out, syntax);
-                modStr = out.toString();
-                System.out.println("RDF from Marc21:"+modStr);
+                modStr = Marc2RDFMapper.getRDFInN_TriplesForRecord(record, false);
             }
             
             return modStr;
@@ -133,12 +124,10 @@ public Marc2RDFConverter(){};
             }
             return triple;
         });
-        
-//        rdf_triples.saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDFText");
-        
+                
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
-//        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFslave003.parquet");
+//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFExperiment1.parquet");
 //        dataset.show();
     }
     

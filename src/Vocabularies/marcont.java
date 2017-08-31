@@ -29,6 +29,10 @@ public class marcont  extends Object {
         return uri;
     }    
     
+    public static Property propertyForName(String name)
+    {
+        return new PropertyImpl(uri, name);
+    }
     
     // Define the property labels and objects
     
@@ -193,8 +197,11 @@ public class marcont  extends Object {
             static final String   kpresentedAt = "presentedAt";
     public static       Property presentedAt = null;
 
-            static final String   kpublishedIn = "publishedIn";
+    static final String   kpublishedIn = "publishedIn";
     public static       Property publishedIn = null;
+    
+    static final String   khasControlNumber = "hasControlNumber";
+    public static       Property hasControlNumber = null;
 
     // Instantiate the properties and the Dataset
     static {
@@ -272,6 +279,7 @@ public class marcont  extends Object {
             isPeerOf = new PropertyImpl(uri, kisPeerOf);
             presentedAt = new PropertyImpl(uri, kpresentedAt);
             publishedIn = new PropertyImpl(uri, kpublishedIn);
+            hasControlNumber = new PropertyImpl(uri, khasControlNumber);
         } catch (Exception e) {
             System.out.println(e);
         }

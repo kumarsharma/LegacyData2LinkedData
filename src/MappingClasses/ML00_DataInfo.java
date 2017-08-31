@@ -69,19 +69,52 @@ public class ML00_DataInfo {
     public void addPropertiesInResourceUsingDataField(Resource res, DataField df)
     {
         List<Subfield> sfs = df.getSubfields();
-        
         Iterator<Subfield> it = sfs.iterator();
-            
-        
-        
         while(it.hasNext())
         {
             Subfield sf = it.next();
             Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
             
             if(null != prop)
-                res.addProperty(prop, sf.getData());
+            {
+                String data = sf.getData();
+                data = data.replace("[", "");
+                data = data.replace("]", "");
+                data = data.replace(",", "");
+                data = data.replace(" :", "");
+                data = data.replace("", "");
+                data = data.replace(" /", "");
+                data = data.replace(" ;", "");
+                res.addProperty(prop, data);
+            }
         }
+    }
+    
+    public String propertiesForNTripleResourceUsingDataField(String resource, DataField df)
+    {
+        List<Subfield> sfs = df.getSubfields();
+        Iterator<Subfield> it = sfs.iterator();
+        String RDF = "";
+        while(it.hasNext())
+        {
+            Subfield sf = it.next();
+            Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
+            
+            if(null != prop)
+            {
+                String data = sf.getData();
+                data = data.replace("[", "");
+                data = data.replace("]", "");
+                data = data.replace(",", "");
+                data = data.replace(" :", "");
+                data = data.replace("", "");
+                data = data.replace(" /", "");
+                data = data.replace(" ;", "");
+                
+                RDF += "<"+resource+">"+" "+"<"+prop.getURI()+">"+" "+"\""+data+"\" .\n";
+            }
+        }
+        return RDF;
     }
     
     
@@ -187,5 +220,99 @@ public class ML00_DataInfo {
         {
             this.addPropertiesInResourceUsingDataField(res, df);
         }
+    }
+   
+   public String propertiesForNTripleResourceAndModelUsingDataField(String resource, DataField df, Dictionary uriCache, boolean addLink)
+    {
+        int dTag = Integer.parseInt(df.getTag());
+        String RDF = "";
+        if(dTag == 100)
+        {
+            String pName = ML1_MainEntryInfo.getPersonName(df);       
+            if(null != pName)
+            {
+                String personURI = Tools.getBaseURI()+pName;
+                RDF += "<"+resource+">"+" "+"<"+marcont.hasAuthor.getURI()+">"+" "+"<"+personURI+"> .\n";
+
+                List<Subfield> sfs = df.getSubfields();
+                Iterator<Subfield> it = sfs.iterator();
+                while(it.hasNext())
+                {
+                    Subfield sf = it.next();
+                    Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
+
+                    if(null != prop)
+                        RDF += "<"+resource+">"+" "+"<"+prop.getURI()+">"+" "+"\""+sf.getData()+"\" .\n";
+                }
+
+                String otherURI = (String)uriCache.valueForKey(pName);
+                
+                if(otherURI == null && addLink)
+                {
+                    otherURI = URiLookup.lookUpDBPediaURiForResourceTitle(pName, "Person");
+                    if(otherURI != null)
+                        uriCache.setValueForKey(otherURI, pName);
+                }
+                else
+                {
+                    System.out.println("READ FROM CACHE");
+                }
+                
+                if(otherURI != null)
+                {
+                    RDF += "<"+resource+">"+" "+"<"+RDFS.seeAlso.getURI()+">"+" "+"<"+otherURI+"> .\n";
+                }
+
+                if(addLink){
+                    
+                    otherURI = URiLookup.lookUpVIAFURiForSearchTerm(pName);
+                    if(otherURI != null)
+                    {
+                        RDF += "<"+resource+">"+" "+"<"+RDFS.seeAlso.getURI()+">"+" "+"<"+otherURI+"> .\n";
+                    }
+                }
+                
+            }
+            
+        }
+        else if(dTag == 650 || dTag == 651)
+        {
+            String pName = ML6_SubjectAccessInfo.getLocalityName(df);
+            
+            if(null != pName)
+            {
+                String otherURI = (String)uriCache.valueForKey(pName);
+                
+                
+                if(otherURI == null && addLink)
+                {
+                    otherURI = URiLookup.lookUpDBPediaURiForResourceTitle(pName, "Place");
+                    
+                    if(otherURI != null)
+                        uriCache.setValueForKey(otherURI, pName);
+                }
+                else
+                {
+                    System.out.println("READ FROM CACHE");
+                }
+                
+                
+                if(otherURI != null)
+                {
+                    RDF += "<"+resource+">"+" "+"<"+VCARD.Locality.getURI()+">"+" "+"<"+otherURI+"> .\n";
+                }
+                else
+                {
+                    RDF += "<"+resource+">"+" "+"<"+VCARD.Locality.getURI()+">"+" "+"\""+pName+"\" .\n";
+                }
+            }
+            
+        }
+        else
+        {
+            RDF += this.propertiesForNTripleResourceUsingDataField(resource, df);
+        }
+        
+        return RDF;
     }
 }

@@ -166,10 +166,37 @@ public class ML0109_NumCodeInfo  extends ML00_DataInfo {
                         
                 }
             }
-                break;  
+                break; 
+                
+            case 35: //series statement
+            {
+                switch(sTag)
+                {
+                    case 'a':
+                        property = marcont.propertyForName("systemControlNumber");// Geographic area code (R)
+                        break;
+
+                    case 'z':
+                        property = marcont.propertyForName("invalidControlNumber"); //  Local GAC code (R)
+                        break;
+
+                    case '6':
+                        property = marcont.propertyForName("linkage"); //ISO code (R)
+                        break;  
+                        
+                    case '8': 
+                            property = marcont.propertyForName("fieldLinkAndSequenceNumber");//Authority record control number or standard number (R)
+                            break;
+    
+                    default:
+                        property = null;
+                        break; 
+                }
+            }
+                break; 
                 
                 
-             case 043: //series statement
+             case 43: //series statement
             {
                 switch(sTag)
                 {
@@ -206,7 +233,9 @@ public class ML0109_NumCodeInfo  extends ML00_DataInfo {
                         break; 
                 }
             }
-                break;     
+                break;
+                 
+            
         }
         
         return property;

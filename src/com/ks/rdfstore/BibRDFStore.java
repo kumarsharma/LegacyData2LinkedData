@@ -21,6 +21,7 @@ import com.hp.hpl.jena.query.QuerySolution ;
 //import com.hp.hpl.jena.tdb.TDBFactory;
 
 import MLTools.Tools;
+import com.hp.hpl.jena.query.ReadWrite;
 
 import com.hp.hpl.jena.tdb.TDBFactory;
 
@@ -71,14 +72,18 @@ public class BibRDFStore {
     
     public void testModel()
     {
+        bibDataset.begin(ReadWrite.WRITE);
+        
         Model model = bibDataset.getDefaultModel();
   	System.out.println("Default model's size: " + model.size());
-  	Iterator<String> it = bibDataset.listNames();
+        System.out.println("Resource Count: " + model.listSubjects().toList().size());
+        
+  	/*Iterator<String> it = bibDataset.listNames();
   	for (;it.hasNext();) {
   		String name = it.next();
   		model = bibDataset.getNamedModel(name);
   		System.out.println("Named graph " + name + " size: " + model.size());
-   	}  	
+   	}  */	
     }
     
     public Model getModel()

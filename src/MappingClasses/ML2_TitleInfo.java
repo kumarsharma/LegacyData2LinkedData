@@ -301,7 +301,7 @@ public class ML2_TitleInfo extends ML00_DataInfo{
                         break;
                         
                     case 'c':
-                        property = null; //stmt of responsability
+                        property = marcont.propertyForName("statementOfResponsibility"); //stmt of responsability
                         break;    
 
                     case 'f':
