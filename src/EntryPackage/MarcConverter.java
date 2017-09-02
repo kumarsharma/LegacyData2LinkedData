@@ -59,6 +59,11 @@ import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
+import org.openrdf.repository.Repository;
+import org.openrdf.repository.sail.SailRepository;
+import org.openrdf.sail.nativerdf.NativeStore;
+
+
 /**
  *
  * @author home
@@ -231,77 +236,52 @@ public class MarcConverter {
         return biboModel;
     }
     
-     public Model ConverTextMarcAndStoreIntoTDB() 
+    public void ConverMarcAndStoreIntoSesame() 
     {
         InputStream in = null;
-        BufferedReader br = null;
         try{
             
             in = new FileInputStream(this.marcFile.getAbsolutePath());
-            br = new BufferedReader(new InputStreamReader(in));
         }
         catch(java.io.FileNotFoundException e)
         {
             System.out.println("################### ERROR: Supplied File not found ###################"); 
-           return null;
         }
-                        
+                
+        pane.setText("################### Marc21 Records ###################\n");
+        pane2.setText("################### RDF Triples ###################\n");
+        
+        MarcReader reader = new MarcStreamReader(in);
+        
+        File dataDir = new File("/Users/user/Documents/RDFStore/Sesame/");
+        Repository repo = new SailRepository(new NativeStore(dataDir));
+        repo.initialize();
+        /*
+        repo.getConnection().
+        
         BibRDFStore store = new BibRDFStore();
+        String paneText = "";
         
         int recordCount = 0;
-        int modelRecordCountLimit = 100000, modelRecordCount=0;
+        int modelRecordCountLimit = 10000, modelRecordCount=0;
         Model bibM = this.getABibModel();
         Model foafM = this.foafModel;
-        
-        String strLine = "";
-        String marcRecord = "";
-        String lastLine = "";
-        StringToMarc reader = new StringToMarc();
-        String RDF = "";
-        try{
-            while ((strLine = br.readLine()) != null)   {
-
-              if(strLine.length()>0)
-                marcRecord += strLine+"\n";
-              if(strLine.equalsIgnoreCase("") && lastLine.contains("906"))
-              {
-                  recordCount++;
-                  Record record = reader.recordFromString(marcRecord);
-//                  RDF += Marc2RDFMapper.getRDFInN_TriplesForRecord(record, addRDFLinks);
-                  Marc2RDFMapper.createResourceFromRecordInModel(record, bibM, foafM, addRDFLinks);
-                  System.out.println("Record Count: " + recordCount); 
-                  modelRecordCount++;
-                    
-                    if(modelRecordCount==modelRecordCountLimit)
-                    {
-                        store.addModel(biboModel);
-                        store.addModel(bibM);
-                        store.commitAndClose();
-                        modelRecordCount=0;
-                        bibM.removeAll();// = this.getABibModel();
-                        foafM.removeAll();// = this.foafModel;
-                    }
-                    
-                   marcRecord = "";
-                    if(this.recordLimit>0 && recordCount > this.recordLimit)
-                        break;
-              }
-            lastLine = strLine;
-        }
-        }catch(java.io.IOException ioe){}
-        
-        store.addModel(biboModel);
-        store.addModel(bibM);
-        store.commitAndClose();
-        System.out.println("Legacy data converted into RDF and stored into TDB");
-        pane2.setText("Legacy data converted into RDF and stored into TDB");
-        return biboModel;
-    }
-     
-     public void testTDBStore()
-     {
-         BibRDFStore store = new BibRDFStore();
-         store.testModel();
+        while(reader.hasNext())
+        {
+            try{
+                recordCount++;
+                Record record = reader.next(); 
+                paneText = paneText.concat(record.toString() + "ENDRECORD");
+                
+                Marc2RDFMapper.createResourceFromRecordInModel(record, bibM, foafM, addRDFLinks);
+                System.out.println("Record Count: " + recordCount); 
+                modelRecordCount++;
+                if(modelRecordCount==modelRecordCountLimit)
+                {
+                    store.addModel(biboModel);
+                    store.addModel(bibM);
+                    store.commiq
+                 }*/
      }
     
     public Model ConverMarcAndStoreIntoFiles() 
@@ -578,5 +558,10 @@ public class MarcConverter {
             
             m.write(fout);
         }catch(Exception ie){}
+    }
+    
+    public void queryTDBStore()
+    {
+        
     }
 }

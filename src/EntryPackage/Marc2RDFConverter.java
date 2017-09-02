@@ -47,8 +47,8 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-                              .master("local")
-//			      .master("spark://192.168.1.106:7077")
+//                              .master("local")
+			      .master("spark://192.168.1.106:7077")
                               .config("spark.driver.cores", 2)
                               .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();
@@ -127,7 +127,7 @@ public Marc2RDFConverter(){};
                 
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
 //        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
-        dataset.write().parquet("/usr/local/hadoop/input/Marc21ToRDFExperiment1.parquet");
+        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment2.parquet");
 //        dataset.show();
     }
     
@@ -198,11 +198,12 @@ public Marc2RDFConverter(){};
     private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
      {
 //        Dataset<Row> ds = ss.read().parquet("/usr/local/hadoop/input/csv2rdf_triples_set6.parquet");
-        Dataset<Row> ds = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
+        Dataset<Row> ds = ss.read().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment1.parquet");
 //        Dataset<Row> dataset2 = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
-        ds.createOrReplaceTempView("rdf_triples");
-        Dataset<Row> namesDF = ss.sql("SELECT count(DISTINCT subject,predicate,object) from rdf_triples");
-        namesDF.show();
+       ds.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
+//        ds.createOrReplaceTempView("rdf_triples");
+//        Dataset<Row> namesDF = ss.sql("SELECT count(DISTINCT subject) from rdf_triples");
+//        namesDF.show();
 //        ds.createOrReplaceTempView("rdf_triples2");
 //        ds.createOrReplaceTempView("rdf_triples3");
 //        ds.select("subject").show();

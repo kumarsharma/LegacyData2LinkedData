@@ -489,7 +489,7 @@ public class MainWindow extends javax.swing.JFrame {
         MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 0, addRDFLinkCheckBox.getState());
 //        biboModel = converter.ConverMarcWithFile();
 //        converter.ConvertMarc21ToRDFUsingSpark();
-        converter.ConverTextMarcAndStoreIntoTDB();
+        converter.ConverMarcAndStoreIntoTDB();
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -572,7 +572,7 @@ public class MainWindow extends javax.swing.JFrame {
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
        
         MarcConverter mrc = new MarcConverter();
-        mrc.testTDBStore();
+        mrc.queryTDBStore();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     
