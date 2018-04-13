@@ -4,13 +4,11 @@
  * and open the template in the editor.
  */
 package MLTools;
-
-import java.io.Serializable;
 /**
  *
  * @author user
  */
-public class RDFTriple implements Serializable {
+public class RDFTriple {
     
     private String subject, predicate, object;
     

@@ -86,6 +86,8 @@ public class MainWindow extends javax.swing.JFrame {
         jButton5 = new javax.swing.JButton();
         addRDFLinkCheckBox = new java.awt.Checkbox();
         jButton6 = new javax.swing.JButton();
+        txtRecordLimit = new javax.swing.JTextField();
+        jLabel18 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -243,6 +245,14 @@ public class MainWindow extends javax.swing.JFrame {
             }
         });
 
+        txtRecordLimit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtRecordLimitActionPerformed(evt);
+            }
+        });
+
+        jLabel18.setText("Limit");
+
         jMenu1.setText("File");
 
         jMenuItem1.setText("Exit");
@@ -280,7 +290,7 @@ public class MainWindow extends javax.swing.JFrame {
                                 .add(jButton5)
                                 .add(18, 18, 18)
                                 .add(jButton4)))
-                        .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+                        .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING, false)
                             .add(layout.createSequentialGroup()
                                 .add(jLabel4)
                                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
@@ -292,12 +302,21 @@ public class MainWindow extends javax.swing.JFrame {
                                 .add(40, 40, 40)
                                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                                     .add(layout.createSequentialGroup()
+                                        .add(jLabel7)
+                                        .add(118, 118, 118))
+                                    .add(layout.createSequentialGroup()
                                         .add(jLabel6)
                                         .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
                                         .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-                                            .add(lblTotalLDRecord, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 60, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
-                                            .add(jLabel8)))
-                                    .add(jLabel7)))
+                                            .add(layout.createSequentialGroup()
+                                                .add(lblTotalLDRecord, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 60, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                                                .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .add(jLabel18))
+                                            .add(layout.createSequentialGroup()
+                                                .add(jLabel8)
+                                                .add(0, 0, Short.MAX_VALUE)))))
+                                .add(2, 2, 2)
+                                .add(txtRecordLimit, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 77, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                             .add(layout.createSequentialGroup()
                                 .add(10, 10, 10)
                                 .add(addRDFLinkCheckBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
@@ -380,7 +399,9 @@ public class MainWindow extends javax.swing.JFrame {
                     .add(jLabel5)
                     .add(lblTotalMarcRecords)
                     .add(jLabel6)
-                    .add(lblTotalLDRecord))
+                    .add(lblTotalLDRecord)
+                    .add(txtRecordLimit, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 40, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                    .add(jLabel18, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 40, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                     .add(jLabel8)
@@ -486,10 +507,13 @@ public class MainWindow extends javax.swing.JFrame {
            return;
         }
         
-        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 0, addRDFLinkCheckBox.getState());
-//        biboModel = converter.ConverMarcWithFile();
+        int limit = Integer.parseInt(txtRecordLimit.getText());
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, limit, addRDFLinkCheckBox.getState());
+        biboModel = converter.ConverMarcWithFile();
+//        biboModel = converter.ConverMarcAndStoreIntoFiles();
 //        converter.ConvertMarc21ToRDFUsingSpark();
-        converter.ConverMarcAndStoreIntoTDB();
+//        converter.ConverMarcAndStoreIntoTDB();
+//        converter.ConverMarcAndStoreIntoNTripleFile();
         
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -565,7 +589,9 @@ public class MainWindow extends javax.swing.JFrame {
            JOptionPane.showMessageDialog(null, "Please select file first!");
            return;
         }
-        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, 0, addRDFLinkCheckBox.getState());
+        
+        int limit = Integer.parseInt(txtRecordLimit.getText());
+        MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, limit, addRDFLinkCheckBox.getState());
         converter.converMarcToTextAndAppendToOneFile();
     }//GEN-LAST:event_jButton5ActionPerformed
 
@@ -574,6 +600,10 @@ public class MainWindow extends javax.swing.JFrame {
         MarcConverter mrc = new MarcConverter();
         mrc.queryTDBStore();
     }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void txtRecordLimitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtRecordLimitActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtRecordLimitActionPerformed
 
     
      private void writeModelToTextArea(Model m, String format, JTextPane pane)
@@ -657,6 +687,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
+    private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -689,5 +720,6 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JTextField txtDsTitle;
     private javax.swing.JTextField txtDsUri;
     private javax.swing.JTextField txtFileName;
+    private javax.swing.JTextField txtRecordLimit;
     // End of variables declaration//GEN-END:variables
 }

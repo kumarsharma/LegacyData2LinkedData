@@ -5,15 +5,9 @@
  */
 package EntryPackage;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Resource;
-import java.io.StringWriter;
-import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
 import org.apache.spark.sql.SparkSession;
 import org.marc4j.marc.Record;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -25,14 +19,10 @@ import org.apache.spark.sql.Row;
 import Mappings.Marc2RDFMapper;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Iterator;
-import org.apache.spark.api.java.function.Function;
-import java.util.List;
-import scala.Tuple2;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import java.util.regex.Pattern;
 import MLTools.RDFTriple;
 import java.util.regex.Matcher;
+import org.apache.spark.api.java.function.Function;
 /**
  *
  * @author userqq
@@ -47,17 +37,15 @@ public Marc2RDFConverter(){};
       SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-//                              .master("local")
-			      .master("spark://192.168.1.106:7077")
-                              .config("spark.driver.cores", 2)
-                              .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
+                              .master("local")
+//			      .master("spark://192.168.1.106:7077")
+                              .config("spark.driver.cores", 10)
 			      .getOrCreate();
-            
-            JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
-            Marc2RDFConverter mrc = new Marc2RDFConverter();
-//            mrc.ShowataFromParquetFile(spark, sparkSession);
-            mrc.convertMarctoRDF(spark, sparkSession);
-//            mrc.ConvertCSVtoDirectRDFTriple(args, spark, sparkSession);
+ 
+      JavaSparkContext spark = new JavaSparkContext(sparkSession.sparkContext());
+      Marc2RDFConverter mrc = new Marc2RDFConverter();
+        mrc.ShowataFromParquetFile(spark, sparkSession);
+      mrc.convertMarctoRDF(spark, sparkSession);
             
         spark.stop();
     }
@@ -67,142 +55,26 @@ public Marc2RDFConverter(){};
         Configuration configuration = new Configuration();
         configuration.set("textinputformat.record.delimiter", "LEADER");
         configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/Desktop/marctxt.txt");
-            
-        JavaPairRDD<LongWritable,Text> javaPairRDD = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
-        JavaRDD<Text> textRDD = javaPairRDD.values();   
-        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
-        Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
-        
-        JavaRDD<String> rdd_customers = textRDD.map((Text text) -> {
-            String line = text.toString();
-            String modStr = "";
-            if(line.length()>50)
-            {
-                line = "LEADER"+line;
-                StringToMarc reader = new StringToMarc();
-                Record record = reader.recordFromString(line);
-                modStr = Marc2RDFMapper.getRDFInN_TriplesForRecord(record, false);
-            }
-            
-            return modStr;
-        });
-        JavaRDD<String> rdf_lines = rdd_customers.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
-        JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
-            
-            Pattern pattern = Pattern.compile("<(.*?)>");
-            Matcher matcher = pattern.matcher(line);
-            RDFTriple triple = new RDFTriple();
-            int count = 0;
-            int end = 0;
-            int totalLength = line.length();
-            while(matcher.find())
-            {
-                if(count==0)
-                {
-                    String s = matcher.group(1);
-                    triple.setSubject(s);
-                    count +=1;
-                }
-                else if(count==1)
-                {
-                    String p = matcher.group(1);
-                    triple.setPredictae(p);
-                    count +=1;
-                    end = matcher.end();
-                }
-                else if(count==2)
-                {
-                    String o = matcher.group(1);
-                    triple.equals(o);
-                    count +=1;
-                }
-                
-                if (count == 2){
-                    String o = line.substring(end+1,totalLength-2);
-                    triple.setObject(o);
-                }
-            }
-            return triple;
-        });
-                
+        JavaPairRDD<LongWritable,Text> fileContent = spark.newAPIHadoopRDD(configuration, TextInputFormat.class, LongWritable.class, Text.class);
+        JavaRDD<Text> marc_records = fileContent.values();   
+        JavaRDD<String> n_triples = marc_records.map(new MarcToNTriplesFunction());
+        JavaRDD<String> n_triples_lines = n_triples.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
+        JavaRDD<RDFTriple> rdf_triples = n_triples_lines.map(new LinesToRDFTripleFunction());
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-//        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/Marc21ToRDF.parquet");
-        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment2.parquet");
-//        dataset.show();
-    }
-    
-    private void ConvertCSVtoDirectRDFTriple(String args[], JavaSparkContext spark, SparkSession ss)
-    {
-        JavaRDD<String> lines = spark.textFile("/Users/user/NetBeansProjects/LegacyData2LinkedData/customers.csv");
-        String header = lines.first();//take out header
-        String headers[] = header.split(",");
-        
-        Broadcast<String[]> broadcastHeader = spark.broadcast(headers);
-        Broadcast<String> broadcastBasePropertyURI = spark.broadcast("http://klyuniv.ac.in/ontology/property#");
-        Broadcast<String> broadcastBaseResourceURI = spark.broadcast("http://klyuniv.ac.in/ontology/resource#");
-        
-        JavaRDD<String> filteredRows = lines.filter(new FunctionImpl1(header));//filter header
-        
-        //convert each line of csv data into rdf data in n-triples format
-        JavaRDD<String> rdd_ntriples = lines.map(new FunctionImpl(broadcastHeader, broadcastBasePropertyURI, broadcastBaseResourceURI));
-        
-
-        //convert n-triples into individual lines
-        JavaRDD<String> rdf_lines = rdd_ntriples.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
-        
-        //convert each line RDFTriple object
-        JavaRDD<RDFTriple> rdf_triples = rdf_lines.map((String line) -> {
-            
-//            Pattern pattern = Pattern.compile("^(?:<([^>]+)>\\s*){2}<?([^>]+)>?$");  
-            Pattern pattern = Pattern.compile("<(.*?)>");
-            Matcher matcher = pattern.matcher(line);
-            RDFTriple triple = new RDFTriple();
-            int count = 0;
-            int end = 0;
-            int totalLength = line.length();
-            while(matcher.find())
-            {
-                if(count==0)
-                {
-                    String s = matcher.group(1);
-                    triple.setSubject(s);
-                    count +=1;
-                }
-                else if(count==1)
-                {
-                    String p = matcher.group(1);
-                    triple.setPredictae(p);
-                    count +=1;
-                    end = matcher.end();
-                }
-                else if(count==2)
-                {
-                    String o = matcher.group(1);
-                    triple.equals(o);
-                    count +=1;
-                }
-                
-                if (count == 2){
-                    String o = line.substring(end+1,totalLength-2);
-                    triple.setObject(o);
-                }
-            }
-            return triple;
-        });
-        
-        //create data-frmae
-        Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/Users/user/Desktop/PhD/ResearchData/csv_triples.parquet");
+        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");
     }
     
     private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
      {
 //        Dataset<Row> ds = ss.read().parquet("/usr/local/hadoop/input/csv2rdf_triples_set6.parquet");
-        Dataset<Row> ds = ss.read().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment1.parquet");
+        Dataset<Row> ds = ss.read().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");
+        ds.printSchema();
 //        Dataset<Row> dataset2 = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
-       ds.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
+//       ds.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        ds.createOrReplaceTempView("rdf_triples");
 //        Dataset<Row> namesDF = ss.sql("SELECT count(DISTINCT subject) from rdf_triples");
+//        Dataset<Row> namesDF = ss.sql("SELECT subject,predicate,object from rdf_triples");
+//        namesDF.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        namesDF.show();
 //        ds.createOrReplaceTempView("rdf_triples2");
 //        ds.createOrReplaceTempView("rdf_triples3");
@@ -221,66 +93,54 @@ public Marc2RDFConverter(){};
 //        subDS.show();
         
 //        Dataset<Row> ds2 = ss.sql("SELECT *FROM rdf_triples s inner join rdf_triples p on (s.subject=p.subject) where s.predicate='http://www.marcont.org/ontology/2.1#hasAddress' AND s.object='\"University of South Carolina,\"'");
-//        ds2.show();
+//        ds.show();
 //        ds2.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
 //        subDS.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF");
      }
+
     
-    private static class FunctionImpl implements Function<String, String>, Serializable {
+    private static class LinesToRDFTripleFunction implements Function<String, RDFTriple> {
 
-        private final Broadcast<String[]> broadcastHeader;
-        private final Broadcast<String> broadcastBasePropertyURI;
-        private final Broadcast<String> broadcastBaseResourceURI;
-
-        private FunctionImpl(Broadcast<String[]> broadcastHeader, Broadcast<String> broadcastBasePropertyURI, Broadcast<String> broadcastBaseResourceURI) {
-            this.broadcastHeader = broadcastHeader;
-            this.broadcastBasePropertyURI = broadcastBasePropertyURI;
-            this.broadcastBaseResourceURI = broadcastBaseResourceURI;
+        public LinesToRDFTripleFunction() {
         }
 
         @Override
-        public String call(String line) {
-            String fields[] = line.split(",");
-            
-            String p[] = broadcastHeader.value();
-            String baseUri = broadcastBasePropertyURI.getValue();
-            String baseResUri = broadcastBaseResourceURI.getValue();
-//            Model biboModel = ModelFactory.createDefaultModel();
-//            biboModel.setNsPrefix("property", baseUri);
-//            Resource aRes = biboModel.createResource(baseResUri+"_"+fields[0]);
-            
-            int i = 0;
-            String resource = baseResUri+"_"+fields[0];
-            
-            String N3 = "";
-            for(String h : p)
+        public RDFTriple call(String line) {
+            Pattern pattern = Pattern.compile("<(.*?)>");
+            Matcher matcher = pattern.matcher(line);
+            RDFTriple triple = new RDFTriple();
+            int count = 0;
+            int end = 0;
+            int totalLength = line.length();
+            while(matcher.find())
             {
-//                aRes.addProperty(new PropertyImpl(baseUri, h), fields[i]);
-                String property = baseUri+h;
-                String n3line = resource+" "+property+" "+fields[i]+" . \n";
-                N3 += n3line;
-                i++;
+                if(count==0)
+                {
+                    String s = matcher.group(1);
+                    triple.setSubject(s);
+                    count +=1;
+                }
+                else if(count==1)
+                {
+                    String p = matcher.group(1);
+                    triple.setPredictae(p);
+                    count +=1;
+                    end = matcher.end();
+                }
+                else if(count==2)
+                {
+                    String o = matcher.group(1);
+                    triple.equals(o);
+                    count +=1;
+                }
+                
+                if (count == 2){
+                    String o = line.substring(end+1,totalLength-2);
+                    triple.setObject(o);
+                }
             }
-            
-//            String syntax = "N-TRIPLES"; // also try "N-TRIPLE" and "TURTLE"
-//            StringWriter out = new StringWriter();
-//            biboModel.write(out, syntax);
-            String modStr = N3;
-            return modStr;
+            return triple;
         }
     }
+  }
 
-    public static class FunctionImpl1 implements Function<String, Boolean>, Serializable {
-
-        private final String header;
-
-        public FunctionImpl1(String header) {
-            this.header = header;
-        }
-
-        @Override
-        public Boolean call(String row) {
-            return !row.equals(header);
-        }
-    }
-}

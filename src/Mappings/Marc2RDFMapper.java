@@ -86,7 +86,8 @@ public class Marc2RDFMapper {
         }
        
         Resource aRes = null;
-        
+        String mappingTable = "";
+
         if(null != keyTitle)
         {
             if(keyTitle.length()>45)
@@ -97,7 +98,7 @@ public class Marc2RDFMapper {
             keyTitle = keyTitle.replaceAll("\\]", "_");
             System.out.println("REPLACED: " + keyTitle);
             aRes = model.createResource(Tools.getBaseURI()+keyTitle);
-            
+                        
             if(addLink)
             {
                 String otherURI = (String)uriCache.valueForKey(keyTitle);
@@ -130,6 +131,7 @@ public class Marc2RDFMapper {
         if(null != rtype)
         {
             aRes.addProperty(DCTerms.type, rtype);
+            mappingTable += "LEADER,"+record.getLeader().getTypeOfRecord()+","+DCTerms.getURI()+"\n";
         }
         
         //record status
@@ -138,6 +140,7 @@ public class Marc2RDFMapper {
         {
             Property p = new PropertyImpl(marcont.getURI(), "hasRecordStatus");
             aRes.addProperty(p, rstatus);
+            mappingTable += "LEADER,RecordStatusß"+","+DCTerms.getURI()+"\n";
         }
         
         //encoding scheme
@@ -146,6 +149,7 @@ public class Marc2RDFMapper {
         {
             Property p = new PropertyImpl(marcont.getURI(), "hasEncodingScheme");
             aRes.addProperty(p, rscheme);
+            mappingTable += "LEADER,RecordStatusß"+","+DCTerms.getURI()+"\n";
         }
         
         //record lenght
@@ -179,10 +183,10 @@ public class Marc2RDFMapper {
 //            if(dataInfo.getPropertyForDataField(df)!=null)
 //                aRes.addProperty(dataInfo.getPropertyForDataField(df), df.toString());
             
-            dataInfo.addPropertiesInResourceUsingDataField(aRes, df);
+            mappingTable += dataInfo.addPropertiesInResourceUsingDataField(aRes, df);
 //            dataInfo.addPropertiesInResourceAndModelUsingDataField(aRes, model, model2, df, uriCache, addLink);
         }
-        
+        System.out.println("Mapping table:\n"+mappingTable);
 //        BibRDFStore store = new BibRDFStore();
 //        store.storeModelIntoTDB(model);
     }    
@@ -194,6 +198,7 @@ public class Marc2RDFMapper {
         String keyTitle = null;
         uriCache = new Dictionary();
 
+        //assigning resource name
         Iterator<DataField> itds = record.getDataFields().iterator();
         while(itds.hasNext())
         {

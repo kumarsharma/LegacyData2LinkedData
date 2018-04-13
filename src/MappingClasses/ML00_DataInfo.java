@@ -66,17 +66,18 @@ public class ML00_DataInfo {
         return null;
     }
     
-    public void addPropertiesInResourceUsingDataField(Resource res, DataField df)
+    public String addPropertiesInResourceUsingDataField(Resource res, DataField df)
     {
         List<Subfield> sfs = df.getSubfields();
         Iterator<Subfield> it = sfs.iterator();
+        String mappingTable = "";
         while(it.hasNext())
         {
             Subfield sf = it.next();
             Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
-            
             if(null != prop)
             {
+                mappingTable += df.getTag()+","+sf.getCode()+","+prop.getURI()+"\n";
                 String data = sf.getData();
                 data = data.replace("[", "");
                 data = data.replace("]", "");
@@ -88,6 +89,7 @@ public class ML00_DataInfo {
                 res.addProperty(prop, data);
             }
         }
+         return mappingTable;
     }
     
     public String propertiesForNTripleResourceUsingDataField(String resource, DataField df)
@@ -95,11 +97,12 @@ public class ML00_DataInfo {
         List<Subfield> sfs = df.getSubfields();
         Iterator<Subfield> it = sfs.iterator();
         String RDF = "";
+        String mappingTable = "";
         while(it.hasNext())
         {
             Subfield sf = it.next();
             Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
-            
+            mappingTable += df.getTag()+","+sf.getCode()+","+prop.getURI()+"\n";
             if(null != prop)
             {
                 String data = sf.getData();
@@ -114,6 +117,7 @@ public class ML00_DataInfo {
                 RDF += "<"+resource+">"+" "+"<"+prop.getURI()+">"+" "+"\""+data+"\" .\n";
             }
         }
+//        System.out.println("Mapping table:\n"+mappingTable);
         return RDF;
     }
     
