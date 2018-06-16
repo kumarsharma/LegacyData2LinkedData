@@ -507,10 +507,13 @@ public class MainWindow extends javax.swing.JFrame {
            return;
         }
         
-        int limit = Integer.parseInt(txtRecordLimit.getText());
+        int limit = 0;
+        if(txtRecordLimit.getText().length()>0)
+            limit = Integer.parseInt(txtRecordLimit.getText());
         MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, limit, addRDFLinkCheckBox.getState());
-        biboModel = converter.ConverMarcWithFile();
-//        biboModel = converter.ConverMarcAndStoreIntoFiles();
+//        converter.ConverMarcWithFile();
+//        biboModel = converter.ConverMarcAndStoreIntoTDB();
+        biboModel = converter.ConverMarcAndStoreIntoFiles();
 //        converter.ConvertMarc21ToRDFUsingSpark();
 //        converter.ConverMarcAndStoreIntoTDB();
 //        converter.ConverMarcAndStoreIntoNTripleFile();

@@ -15,25 +15,15 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
-import com.hp.hpl.jena.vocabulary.VCARD;
-import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.DCTerms;
 import com.hp.hpl.jena.vocabulary.*;
-import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import java.util.ListIterator;
 import org.marc4j.marc.ControlField;
 import org.marc4j.marc.DataField;
 import org.marc4j.marc.Record;
-
 import org.marc4j.converter.CharConverter;
-import org.marc4j.marc.VariableField;
-
-import com.ks.rdfstore.BibRDFStore;
 import org.marc4j.marc.Leader;
-
 import MLTools.Dictionary;
-import MappingClasses.*;
-import java.util.List;
 import java.util.Iterator;
 
 
@@ -160,7 +150,7 @@ public class Marc2RDFMapper {
             aRes.addProperty(p, ""+rlen);
         }
         
-        aRes.addProperty(DCTerms.type, DCTerms.BibliographicResource);
+        //aRes.addProperty(DCTerms.type, DCTerms.BibliographicResource);
         ListIterator controlFields = record.getControlFields().listIterator();
         while(controlFields.hasNext())
         {

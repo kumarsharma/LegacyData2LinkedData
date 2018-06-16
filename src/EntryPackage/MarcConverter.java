@@ -157,27 +157,45 @@ public class MarcConverter {
         pane2.setText("################### RDF Triples ###################\n");
         
         MarcReader reader = new MarcStreamReader(in);
+        long recordCount = 0, partCount = 1;
+        int modelRecordCountLimit = 100000, modelRecordCount=0;
         
         String paneText = "";
-        int recordCount = 0;
+        long startTime = System.currentTimeMillis();
         while(reader.hasNext())
         {
             try{
                 recordCount++;
-                
                 Record record = reader.next(); 
+                
                 /*paneText = paneText.concat(record.toString() + "ENDRECORD");
                 Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, addRDFLinks);*/
                 System.out.println("Record Count: " + recordCount); 
-
-                if(recordLimit != 0 && recordCount > this.recordLimit)
-                    break;
+                /*modelRecordCount++;
+                
+                if(modelRecordCount==modelRecordCountLimit)
+                {
+                    this.writeModelToFile(biboModel, "RDF/XML", "mark21rdf_part_"+partCount);
+                    this.writeModelToFile(foafModel, "RDF/XML", "mark21foaf_part_"+partCount);
+                    biboModel.removeAll();
+                    foafModel.removeAll();
+                    partCount++;
+                    modelRecordCount=0;
+                }*/
+                
+//                if(recordLimit != 0 && recordCount > this.recordLimit)
+//                    break;
                 }catch(org.marc4j.MarcException me){}
         }
-        pane.setText(paneText);
+//        pane.setText(paneText);
         System.out.println("Writing to text area");
-        this.writeModelToTextArea(biboModel, "RDF/XML", pane2);
-        this.writeModelToFile(biboModel, "RDF/XML", "mark21rdfdata");
+//        this.writeModelToFile(biboModel, "RDF/XML", "mark21rdf_part_"+partCount+1);
+//        this.writeModelToFile(foafModel, "RDF/XML", "mark21foaf_part_"+partCount+1);
+        
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        int totalTime = (int)((elapsedTime / (1000*60)) % 60);
+        System.out.println("Data saved to file store. Total time: "+elapsedTime+" ms; "+totalTime+" min");
         return biboModel;
     }
     
@@ -204,7 +222,7 @@ public class MarcConverter {
         String paneText = "";
         
         int recordCount = 0;
-        int modelRecordCountLimit = 10000, modelRecordCount=0;
+        int modelRecordCountLimit = 1000, modelRecordCount=0;
         Model bibM = this.getABibModel();
         Model foafM = this.foafModel;
         while(reader.hasNext())
@@ -375,7 +393,7 @@ public class MarcConverter {
         BibRDFStore store = new BibRDFStore();
         
         int recordCount = 0, partCount = 1;
-        int modelRecordCountLimit = 100000, modelRecordCount=0;
+        int modelRecordCountLimit = 100, modelRecordCount=0;
 //        Model bibM = this.getABibModel();
 //        Model foafM = this.foafModel;
         
@@ -384,6 +402,7 @@ public class MarcConverter {
         String lastLine = "";
         StringToMarc reader = new StringToMarc();
         String RDF = "";
+        long startTime = System.currentTimeMillis();
         try{
             while ((strLine = br.readLine()) != null)   {
 
@@ -400,8 +419,8 @@ public class MarcConverter {
                 
                 if(modelRecordCount==modelRecordCountLimit)
                 {
-                    this.writeModelToFile(biboModel, "RDF/XML", "mark21rdf_part_"+partCount);
-                    this.writeModelToFile(foafModel, "RDF/XML", "mark21foaf_part_"+partCount);
+                    this.writeModelToFile(biboModel, "N-TRIPLES", "mark21ntriples_part_"+partCount);
+                    this.writeModelToFile(foafModel, "N-TRIPLES", "mark21ntriplesfoaf_part_"+partCount);
                     biboModel.removeAll();
                     foafModel.removeAll();
                     partCount++;
@@ -421,6 +440,12 @@ public class MarcConverter {
         store.commitAndClose();
         System.out.println("Legacy data converted into RDF and stored into RDF/XML files");
         pane2.setText("Legacy data converted into RDF and stored into RDF/XML files");
+        
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        int totalTime = (int)((elapsedTime / (1000*60)) % 60);
+        System.out.println("Data saved to file store. Total time: "+elapsedTime+" ms; "+totalTime+" min");
+        
         return biboModel;
     }
     
@@ -685,7 +710,7 @@ public class MarcConverter {
             else if(format.equalsIgnoreCase("N-TRIPLES") || format.equalsIgnoreCase("NT") || format.equalsIgnoreCase("N-TRIPLE"))
                 fout = new java.io.FileOutputStream(outputPath+fileName+".nt");
             
-            m.write(fout);
+            m.write(fout, "N-TRIPLE");
         }catch(Exception ie){}
     }
     

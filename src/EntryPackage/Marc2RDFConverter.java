@@ -6,19 +6,10 @@
 package EntryPackage;
 
 import org.apache.spark.sql.SparkSession;
-import org.marc4j.marc.Record;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import Mappings.Marc2RDFMapper;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 import MLTools.RDFTriple;
 import java.util.regex.Matcher;
@@ -52,6 +43,7 @@ public Marc2RDFConverter(){};
    
     private void convertMarctoRDF(JavaSparkContext spark,SparkSession ss)
     {
+        /*
         Configuration configuration = new Configuration();
         configuration.set("textinputformat.record.delimiter", "LEADER");
         configuration.set("mapreduce.input.fileinputformat.inputdir", "/Users/user/Desktop/marctxt.txt");
@@ -61,7 +53,7 @@ public Marc2RDFConverter(){};
         JavaRDD<String> n_triples_lines = n_triples.flatMap(s -> Arrays.asList(s.split("\n")).iterator());
         JavaRDD<RDFTriple> rdf_triples = n_triples_lines.map(new LinesToRDFTripleFunction());
         Dataset<Row> dataset = ss.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");
+        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");*/
     }
     
     private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
