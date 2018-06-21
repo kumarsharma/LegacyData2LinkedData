@@ -513,8 +513,8 @@ public class MainWindow extends javax.swing.JFrame {
         MarcConverter converter = new MarcConverter(this.mar21File, textPaneMarc, textPaneLD, limit, addRDFLinkCheckBox.getState());
 //        converter.ConverMarcWithFile();
 //        biboModel = converter.ConverMarcAndStoreIntoTDB();
-        biboModel = converter.ConverMarcAndStoreIntoFiles();
-//        converter.ConvertMarc21ToRDFUsingSpark();
+//        biboModel = converter.ConverMarcAndStoreIntoFiles();
+        converter.ConvertMarc21ToRDFUsingSpark();
 //        converter.ConverMarcAndStoreIntoTDB();
 //        converter.ConverMarcAndStoreIntoNTripleFile();
         

@@ -162,6 +162,7 @@ public class MarcConverter {
         
         String paneText = "";
         long startTime = System.currentTimeMillis();
+        this.recordLimit = 1000;
         while(reader.hasNext())
         {
             try{
@@ -170,7 +171,7 @@ public class MarcConverter {
                 
                 /*paneText = paneText.concat(record.toString() + "ENDRECORD");
                 Marc2RDFMapper.createResourceFromRecordInModel(record, biboModel, foafModel, addRDFLinks);*/
-                System.out.println("Record Count: " + recordCount); 
+                System.out.println(record.toString()); 
                 /*modelRecordCount++;
                 
                 if(modelRecordCount==modelRecordCountLimit)
@@ -183,8 +184,8 @@ public class MarcConverter {
                     modelRecordCount=0;
                 }*/
                 
-//                if(recordLimit != 0 && recordCount > this.recordLimit)
-//                    break;
+                if(recordLimit != 0 && recordCount > this.recordLimit)
+                    break;
                 }catch(org.marc4j.MarcException me){}
         }
 //        pane.setText(paneText);
