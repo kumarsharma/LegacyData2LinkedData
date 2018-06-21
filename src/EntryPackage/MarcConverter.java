@@ -62,7 +62,7 @@ import java.io.FileWriter;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.sail.nativerdf.NativeStore;
-
+import org.openrdf.repository.RepositoryException;
 
 /**
  *
@@ -346,7 +346,11 @@ public class MarcConverter {
         
         File dataDir = new File("/Users/user/Documents/RDFStore/Sesame/");
         Repository repo = new SailRepository(new NativeStore(dataDir));
+        
+        try{
         repo.initialize();
+        }catch(RepositoryException re){}
+        
         /*
         repo.getConnection().
         
@@ -503,8 +507,8 @@ public class MarcConverter {
         SparkSession sparkSession = SparkSession
 			      .builder()
 			      .appName("MarcRecordReader")
-//                              .master("local")
-			      .master("spark://192.168.1.106:7077")
+                              .master("local")
+//			      .master("spark://192.168.1.106:7077")
                               .config("spark.driver.cores", 2)
                               .config("spark.executor.uri", "/Users/user/spark-2.2.0-bin-hadoop2.7")
 			      .getOrCreate();
@@ -570,7 +574,7 @@ public class MarcConverter {
         });
                 
         Dataset<Row> dataset = sparkSession.createDataFrame(rdf_triples, RDFTriple.class); 
-        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");
+        dataset.write().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDF_Thesis_Exp1.parquet");
         spark.stop();
     }
      

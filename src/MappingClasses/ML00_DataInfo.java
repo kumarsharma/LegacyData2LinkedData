@@ -97,12 +97,12 @@ public class ML00_DataInfo {
         List<Subfield> sfs = df.getSubfields();
         Iterator<Subfield> it = sfs.iterator();
         String RDF = "";
-        String mappingTable = "";
+//        String mappingTable = "";
         while(it.hasNext())
         {
             Subfield sf = it.next();
             Property prop = this.getPropertyForSubFieldUsingDataField(sf, df);
-            mappingTable += df.getTag()+","+sf.getCode()+","+prop.getURI()+"\n";
+//            mappingTable += df.getTag()+","+sf.getCode()+","+prop.getURI()+"\n";
             if(null != prop)
             {
                 String data = sf.getData();

@@ -59,7 +59,7 @@ public Marc2RDFConverter(){};
     private void ShowataFromParquetFile(JavaSparkContext spark, SparkSession ss)
      {
 //        Dataset<Row> ds = ss.read().parquet("/usr/local/hadoop/input/csv2rdf_triples_set6.parquet");
-        Dataset<Row> ds = ss.read().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment5.parquet");
+        Dataset<Row> ds = ss.read().parquet("/usr/local/Cellar/hadoop/hdfs/input/Marc21ToRDFExperiment6.parquet");
         ds.printSchema();
 //        Dataset<Row> dataset2 = ss.read().parquet("/Users/user/Desktop/PhD/ResearchData/rdf_triples.parquet");
 //       ds.toJavaRDD().saveAsTextFile("/Users/user/Desktop/PhD/ResearchData/FetchedRDF2");
