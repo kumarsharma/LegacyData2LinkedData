@@ -398,7 +398,7 @@ public class MarcConverter {
         BibRDFStore store = new BibRDFStore();
         
         int recordCount = 0, partCount = 1;
-        int modelRecordCountLimit = 100, modelRecordCount=0;
+        int modelRecordCountLimit = 10000, modelRecordCount=0;
 //        Model bibM = this.getABibModel();
 //        Model foafM = this.foafModel;
         
@@ -715,7 +715,16 @@ public class MarcConverter {
             else if(format.equalsIgnoreCase("N-TRIPLES") || format.equalsIgnoreCase("NT") || format.equalsIgnoreCase("N-TRIPLE"))
                 fout = new java.io.FileOutputStream(outputPath+fileName+".nt");
             
-            m.write(fout, "N-TRIPLE");
+            if(format.equalsIgnoreCase("RDF/XML"))
+                m.write(fout, "RDF/XML");
+            else if(format.equalsIgnoreCase("N3"))
+                m.write(fout, "N3");
+            else if(format.equalsIgnoreCase("N-TRIPLES") || format.equalsIgnoreCase("NT") || format.equalsIgnoreCase("N-TRIPLE"))
+                m.write(fout, "N-TRIPLE");
+            else if(format.equalsIgnoreCase("TURTLE") || format.equalsIgnoreCase("TTL"))
+                m.write(fout, "TURTLE");
+            else 
+                m.write(fout, "RDF/XML");
         }catch(Exception ie){}
     }
     
