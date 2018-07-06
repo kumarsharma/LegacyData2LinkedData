@@ -4,6 +4,7 @@
  */
 package EntryPackage;
 
+import LinkDataset.URiLookup;
 import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
@@ -54,10 +55,13 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import MLTools.RDFTriple;
+import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
+import com.hp.hpl.jena.util.FileManager;
 import com.ks.rdfstore.BibRDFStore;
 import java.io.PrintWriter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.util.List;
 
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.sail.SailRepository;
@@ -679,6 +683,42 @@ public class MarcConverter {
         }catch(Exception e){}
         pane.setText("Finished Appending");        
     }
+    
+    public void GenerateRDFLinks(){
+        
+        Model model = ModelFactory.createDefaultModel();
+//        InputStream in = FileManager.get().open("/Users/user/Provenance/prov_data_non_heritted.rdf");
+        InputStream in = FileManager.get().open(this.marcFile.getAbsolutePath());
+        if(in == null)
+        {
+            System.out.println("File not found");
+            return;
+        }
+        model.read(this.marcFile.getAbsolutePath());
+        
+        ResIterator subit = model.listSubjects();
+        while(subit.hasNext())
+        {
+            Resource r = subit.next();
+            Statement st = r.getProperty(new PropertyImpl("http://RDVocab.info/Elements/", "keyTitle"));
+            
+            if(st!=null){
+                
+                String propname = st.getObject().isLiteral() ? st.getObject().asLiteral().getString() : st.getObject().asResource().toString();
+                URiLookup lookup = new URiLookup();
+                List<String> linkedURIs = lookup.LinkedURIsForResourceTitle(propname, "", r);
+
+                if(linkedURIs != null)
+                {
+                    for(String s:linkedURIs)
+                        r.addProperty(RDFS.seeAlso, model.createResource(s));
+                }
+            }
+        }
+        
+        this.writeModelToFile(model, "RDF/XML", "rdf_bibo_linked");
+    }
+    
     private void writeModelToTextArea(Model m, String format, JTextPane pane)
     {
         pane.setText("");
